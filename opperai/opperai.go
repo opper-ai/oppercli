@@ -129,3 +129,27 @@ func (c *Client) CreateFunction(ctx context.Context, function FunctionDescriptio
 
 	return response["id"], nil
 }
+
+// DeleteFunction deletes a function by its ID or path.
+func (c *Client) DeleteFunction(ctx context.Context, id string, path string) error {
+	var endpoint string
+	if path != "" {
+		endpoint = fmt.Sprintf("/api/v1/functions/by_path/%s", path)
+	} else if id != "" {
+		endpoint = fmt.Sprintf("/api/v1/functions/%s", id)
+	} else {
+		return fmt.Errorf("either id or path must be provided")
+	}
+
+	resp, err := c.DoRequest(ctx, http.MethodDelete, endpoint, nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to delete function with status %s", resp.Status)
+	}
+
+	return nil
+}
