@@ -1,13 +1,14 @@
 package opperai
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
-	"time"
 )
 
 // Client is the HTTP client for the Opper AI API.
@@ -15,10 +16,9 @@ type Client struct {
 	APIKey  string
 	BaseURL string
 	client  *http.Client
-	Timeout time.Duration
 }
 
-// NewClient creates a new Client with an optional baseURL and timeout.
+// NewClient creates a new Client with an optional baseURL.
 func NewClient(apiKey string, baseURL ...string) *Client {
 	defaultBaseURL := "https://api.opper.ai"
 	if len(baseURL) > 0 && baseURL[0] != "" {
@@ -27,7 +27,6 @@ func NewClient(apiKey string, baseURL ...string) *Client {
 	return &Client{
 		APIKey:  apiKey,
 		BaseURL: defaultBaseURL,
-		Timeout: 60 * time.Second,
 	}
 }
 
@@ -42,47 +41,62 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 	req.Header.Set("X-OPPER-API-KEY", c.APIKey)
 
 	if c.client == nil {
-		c.client = &http.Client{
-			Timeout: c.Timeout,
-		}
+		c.client = &http.Client{}
 	}
 
 	return c.client.Do(req)
 }
 
-// Chat initiates a chat session.
-func (c *Client) Chat(ctx context.Context, functionPath string, data ChatPayload) (*FunctionResponse, error) {
+// Chat initiates a chat session with streaming support and returns a channel for SSE chunks.
+func (c *Client) Chat(ctx context.Context, functionPath string, data ChatPayload, stream bool) (<-chan []byte, error) {
 	serializedData, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.DoRequest(ctx, http.MethodPost, "/v1/chat/"+functionPath, bytes.NewBuffer(serializedData))
+	path := "/v1/chat/" + functionPath
+	if stream {
+		path += "?stream=true"
+	}
+	resp, err := c.DoRequest(ctx, http.MethodPost, path, bytes.NewBuffer(serializedData))
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusTooManyRequests {
+		resp.Body.Close()
 		return nil, ErrRateLimit
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
 		return nil, fmt.Errorf("%w with status %s", ErrFunctionRunFail, resp.Status)
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	chunks := make(chan []byte)
+	go func() {
+		defer close(chunks)
+		defer resp.Body.Close()
 
-	var functionResponse FunctionResponse
-	err = json.Unmarshal(body, &functionResponse)
-	if err != nil {
-		return nil, err
-	}
+		reader := bufio.NewReader(resp.Body)
+		for {
+			line, err := reader.ReadBytes('\n')
+			if err == io.EOF {
+				break // End of stream
+			}
+			if err != nil {
+				log.Printf("Error reading chunk: %v", err)
+				break
+			}
 
-	return &functionResponse, nil
+			// Filter out non-data lines if necessary
+			if bytes.HasPrefix(line, []byte("data:")) {
+				chunks <- line
+			}
+		}
+	}()
+
+	return chunks, nil
 }
 
 // CreateFunction creates a new function.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -81,18 +82,26 @@ func main() {
 	}
 
 	// Create a context with a timeout to avoid hanging the request indefinitely.
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	// Make the chat request using the context and the function name.
-	response, err := client.Chat(ctx, functionName, chatPayload)
+	chunks, err := client.Chat(ctx, functionName, chatPayload, true)
 	if err != nil {
-		fmt.Println("Error calling chat function:", err)
+		fmt.Println("Error initiating chat function with streaming:", err)
 		return
 	}
 
-	// Check and print the response message if it's not nil.
-	if response.Message != nil {
-		fmt.Println(*response.Message)
+	for chunk := range chunks {
+		trimmedChunk := strings.TrimPrefix(string(chunk), "data: ")
+
+		var result map[string]interface{}
+		if err := json.Unmarshal([]byte(trimmedChunk), &result); err != nil {
+			fmt.Fprintln(os.Stderr, "Error unmarshalling chunk:", err)
+			continue
+		}
+		if delta, ok := result["delta"].(string); ok {
+			fmt.Print(delta)
+		}
 	}
+	fmt.Println("Streaming complete.")
 }
