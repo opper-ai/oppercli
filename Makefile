@@ -1,31 +1,14 @@
-# Makefile
-
-# Project-specific settings
-BINARY_NAME=opper
-MAIN_FILE=cmd/opper/main.go
-
-# Go related variables.
-GOBASE=$(shell pwd)
-GOBIN=$(GOBASE)/bin
-GOPATH=$(shell go env GOPATH)
-
-# Go commands
-GOCMD=go
-GOBUILD=$(GOCMD) build
-GOINSTALL=$(GOCMD) install
-GOCLEAN=$(GOCMD) clean
-
 # Build the project
 build:
-	$(GOBUILD) -o $(GOBIN)/$(BINARY_NAME) $(MAIN_FILE)
+	go build -o bin/opper cmd/opper/main.go
 
 # Install dependencies and the project
 install:
-	$(GOINSTALL) $(MAIN_FILE)
+	cd cmd/opper && go install
 
 # Clean build files
 clean:
-	$(GOCLEAN)
-	rm -f $(GOBIN)/$(BINARY_NAME)
+	go clean
+	rm -f bin/opper
 
 .PHONY: build install clean
