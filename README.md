@@ -12,6 +12,12 @@ brew install golang
 make install
 ```
 
+## Configuration
+
+```shell
+export OPPER_API_KEY=op-yourkeyhere
+```
+
 ## Examples
 
 ```shell
