@@ -103,5 +103,5 @@ func main() {
 			fmt.Print(delta)
 		}
 	}
-	fmt.Println("Streaming complete.")
+	fmt.Println()
 }
