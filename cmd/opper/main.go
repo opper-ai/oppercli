@@ -18,6 +18,7 @@ type Args struct {
 	IsCreation     bool
 	IsDeletion     bool
 	IsListing      bool
+	IsGetByPath    bool
 	ListFilter     string
 }
 
@@ -53,6 +54,13 @@ func parseArgs() Args {
 		if len(os.Args) > 2 {
 			args.ListFilter = os.Args[2]
 		}
+	} else if firstArg == "-g" {
+		args.IsGetByPath = true
+		if len(os.Args) < 3 {
+			fmt.Println("Error: Function path for retrieval not provided.")
+			os.Exit(1)
+		}
+		args.FunctionName = os.Args[2]
 	} else {
 		args.FunctionName = firstArg
 		if len(os.Args) == 2 || os.Args[2] == "-" {
@@ -123,6 +131,18 @@ func main() {
 					function.Path, function.Description)
 			}
 		}
+		return
+	} else if args.IsGetByPath {
+		function, err := client.GetFunctionByPath(context.Background(), args.FunctionName)
+		if err != nil {
+			fmt.Println("Error retrieving function by path:", err)
+			return
+		}
+		if function == nil {
+			fmt.Println("Function not found.")
+			return
+		}
+		fmt.Printf("Path: %s\nDescription: %s\nInstructions: %s\n\n", function.Path, function.Description, function.Instructions)
 		return
 	} else {
 		// Prepare the chat payload with the message content.

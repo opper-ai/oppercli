@@ -181,3 +181,29 @@ func (c *Client) ListFunctions(ctx context.Context) ([]FunctionDescription, erro
 
 	return response.Functions, nil
 }
+
+// GetFunctionByPath retrieves a function description by its path.
+func (c *Client) GetFunctionByPath(ctx context.Context, functionPath string) (*FunctionDescription, error) {
+	endpoint := fmt.Sprintf("/api/v1/functions/by_path/%s", functionPath)
+	resp, err := c.DoRequest(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil // Function not found
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get function %s with status %s", functionPath, resp.Status)
+	}
+
+	var function FunctionDescription
+	err = json.NewDecoder(resp.Body).Decode(&function)
+	if err != nil {
+		return nil, err
+	}
+
+	return &function, nil
+}

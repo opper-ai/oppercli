@@ -36,6 +36,12 @@ Filter the list by a search term:
 opper -l joch
 ```
 
+### Get
+
+```shell
+opper -l joch/joker
+```
+
 ## Examples
 
 ```shell
