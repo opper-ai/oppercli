@@ -17,6 +17,8 @@ type Args struct {
 	MessageContent string
 	IsCreation     bool
 	IsDeletion     bool
+	IsListing      bool
+	ListFilter     string
 }
 
 func parseArgs() Args {
@@ -46,6 +48,11 @@ func parseArgs() Args {
 			os.Exit(1)
 		}
 		args.FunctionName = os.Args[2]
+	} else if firstArg == "-l" {
+		args.IsListing = true
+		if len(os.Args) > 2 {
+			args.ListFilter = os.Args[2]
+		}
 	} else {
 		args.FunctionName = firstArg
 		if len(os.Args) == 2 || os.Args[2] == "-" {
@@ -99,6 +106,23 @@ func main() {
 			return
 		}
 		fmt.Println("Function deleted successfully.")
+		return
+	} else if args.IsListing {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+
+		functions, err := client.ListFunctions(ctx)
+		if err != nil {
+			fmt.Println("Error listing functions:", err)
+			return
+		}
+
+		for _, function := range functions {
+			if args.ListFilter == "" || strings.Contains(function.Path, args.ListFilter) {
+				fmt.Printf("Path: %s, Description: %s\n",
+					function.Path, function.Description)
+			}
+		}
 		return
 	} else {
 		// Prepare the chat payload with the message content.

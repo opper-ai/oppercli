@@ -153,3 +153,31 @@ func (c *Client) DeleteFunction(ctx context.Context, id string, path string) err
 
 	return nil
 }
+
+// ListFunctions retrieves a list of functions for the organization.
+func (c *Client) ListFunctions(ctx context.Context) ([]FunctionDescription, error) {
+	resp, err := c.DoRequest(ctx, http.MethodGet, "/api/v1/functions/for_org", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to list functions with status %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response struct {
+		Functions []FunctionDescription `json:"functions"`
+	}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Functions, nil
+}

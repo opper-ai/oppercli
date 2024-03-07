@@ -22,6 +22,20 @@ opper -c joch/joker Respond to input with Linux or unix related jokes
 opper -d joch/joker
 ```
 
+### List
+
+List all functions:
+
+```shell
+opper -l
+```
+
+Filter the list by a search term:
+
+```shell
+opper -l joch
+```
+
 ## Examples
 
 ```shell
