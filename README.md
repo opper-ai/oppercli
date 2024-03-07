@@ -37,3 +37,9 @@ opper joch/shell git revert to last commit
 ```shell
 opper -c joch/joker Respond to input with Linux or unix related jokes
 ```
+
+## Delete function
+
+```shell
+opper -d joch/joker
+```
