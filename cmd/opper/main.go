@@ -25,7 +25,24 @@ type Args struct {
 func parseArgs() Args {
 	// Check if at least the function name argument is provided.
 	if len(os.Args) < 2 {
-		fmt.Println("Error: Function name argument not provided.")
+		fmt.Println(`Usage:
+-c <function name> [instructions]     Create a function with the specified name and optional instructions.
+-d <function name>                    Delete the specified function.
+-l [list filter]                      List functions, optionally filtering by the provided filter.
+-g <function path>                    Retrieve a function by its path.
+<function name> [prompt]              Initiate a chat with the specified function name and optional prompt.
+                                      If message content is not provided directly, it can be read from stdin.
+                                      Pass both stdin and a prompt by passing '-' before the prompt.
+
+Examples:
+opper -c my/function Respond to questions. Be nice, and use emojis.
+opper -d my/function
+opper -l my/
+opper -g my/function
+opper my/function Hello, world!
+echo "Hello, world!" | opper my/function
+echo "Hello, world!" | opper my/function - print the first word
+		`)
 		os.Exit(1)
 	}
 
