@@ -63,18 +63,29 @@ func parseArgs() Args {
 		args.FunctionName = os.Args[2]
 	} else {
 		args.FunctionName = firstArg
+		messageContentParts := []string{}
+
+		if len(os.Args) > 2 {
+			if os.Args[2] == "-" {
+				messageContentParts = append(messageContentParts, strings.Join(os.Args[3:], " "))
+			} else {
+				messageContentParts = append(messageContentParts, strings.Join(os.Args[2:], " "))
+			}
+		}
+
 		if len(os.Args) == 2 || os.Args[2] == "-" {
-			// If the second argument is "-" or not provided, read from stdin.
 			content, err := io.ReadAll(os.Stdin)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
 				os.Exit(1)
 			}
-			args.MessageContent = string(content)
-		} else {
-			// Combine all remaining arguments as the message content.
-			args.MessageContent = strings.Join(os.Args[2:], " ")
+			if len(messageContentParts) > 0 {
+				messageContentParts = append(messageContentParts, "\n")
+			}
+			messageContentParts = append(messageContentParts, string(content))
 		}
+
+		args.MessageContent = strings.Join(messageContentParts, "")
 	}
 
 	return args

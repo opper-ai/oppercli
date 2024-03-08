@@ -42,6 +42,16 @@ opper -l joch
 opper -l joch/joker
 ```
 
+## Working with command line arguments and stdin
+
+The prompt can be passed on the command line, or as standard input. If you want to pass standard input, and combine it with a prompt, add a `-` on the command line before writing the prompt.
+
+```shell
+opper joch/gpt4 tell me a short joke
+echo "tell me a short joke" | opper joch/gpt4
+echo '{"name":"Johnny", "age":41}' | opper joch/gpt4 - only print age
+```
+
 ## Examples
 
 ```shell
