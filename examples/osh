@@ -1,0 +1,4 @@
+#!/bin/zsh
+cmd=$(opper shell "$@")
+vared cmd
+eval "$cmd"
