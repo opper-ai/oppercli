@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opper-ai/opper-go/opperai"
+	"github.com/opper-ai/oppercli/opperai"
 )
 
 type Args struct {

@@ -1,3 +1,3 @@
-module github.com/opper-ai/opper-go
+module github.com/opper-ai/oppercli
 
-go 1.22.1
+go 1.22
