@@ -51,8 +51,8 @@ jobs:
       - name: Download binary from artifacts
         uses: actions/download-artifact@v4
         with:
-          name: binary
-          path: ./bin
+          name: opper
+          path: .
 
       - name: Create GitHub Release
         env:
