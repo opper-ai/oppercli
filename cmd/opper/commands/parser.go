@@ -1,9 +1,36 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"strings"
+
+	"github.com/opper-ai/oppercli/opperai"
 )
+
+// HelpCommand shows usage information
+type HelpCommand struct{}
+
+func (c *HelpCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	fmt.Println(`Usage:
+-c <function name> [instructions]     Create a function with the specified name and optional instructions.
+-d <function name>                    Delete the specified function.
+-l [list filter]                      List functions, optionally filtering by the provided filter.
+-g <function path>                    Retrieve a function by its path.
+<function name> [prompt]              Initiate a chat with the specified function name and optional prompt.
+                                      If message content is not provided directly, it can be read from stdin.
+                                      Pass both stdin and a prompt by passing '-' before the prompt.
+
+Examples:
+opper -c my/function Respond to questions. Be nice, and use emojis.
+opper -d my/function
+opper -l my/
+opper -g my/function
+opper my/function Hello, world!
+echo "Hello, world!" | opper my/function
+echo "Hello, world!" | opper my/function - print the first word`)
+	return nil
+}
 
 type CommandParser struct{}
 
@@ -12,8 +39,9 @@ func NewCommandParser() *CommandParser {
 }
 
 func (p *CommandParser) Parse(args []string) (Commander, error) {
-	if len(args) < 2 {
-		return nil, fmt.Errorf("insufficient arguments")
+	// Show help if no arguments or help flags are provided
+	if len(args) < 2 || args[1] == "-h" || args[1] == "--help" || args[1] == "help" {
+		return &HelpCommand{}, nil
 	}
 
 	switch args[1] {
