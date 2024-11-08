@@ -18,8 +18,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize the client
-	client := opperai.NewClient(apiKey)
+	// Initialize the client with base URL from environment or empty string
+	baseURL := os.Getenv("OPPER_BASE_URL")
+	client := opperai.NewClient(apiKey, baseURL)
 
 	// Create command parser
 	parser := commands.NewCommandParser()
