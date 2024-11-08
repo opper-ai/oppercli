@@ -42,3 +42,14 @@ type IndexConfig struct {
 	Settings   map[string]string `json:"settings"`   // Index-specific settings
 	Dimensions int               `json:"dimensions"` // For vector indexes
 }
+
+type CustomLanguageModel struct {
+	Name           string                 `json:"name"`
+	Identifier     string                 `json:"identifier"`
+	APIKey         string                 `json:"api_key"`
+	Extra          map[string]interface{} `json:"extra"`
+	ID             int                    `json:"id"`
+	OrganizationID int                    `json:"organization_id"`
+	CreatedAt      string                 `json:"created_at"`
+	UpdatedAt      string                 `json:"updated_at"`
+}

@@ -1,36 +1,9 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"strings"
-
-	"github.com/opper-ai/oppercli/opperai"
 )
-
-// HelpCommand shows usage information
-type HelpCommand struct{}
-
-func (c *HelpCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	fmt.Println(`Usage:
--c <function name> [instructions]     Create a function with the specified name and optional instructions.
--d <function name>                    Delete the specified function.
--l [list filter]                      List functions, optionally filtering by the provided filter.
--g <function path>                    Retrieve a function by its path.
-<function name> [prompt]              Initiate a chat with the specified function name and optional prompt.
-                                      If message content is not provided directly, it can be read from stdin.
-                                      Pass both stdin and a prompt by passing '-' before the prompt.
-
-Examples:
-opper -c my/function Respond to questions. Be nice, and use emojis.
-opper -d my/function
-opper -l my/
-opper -g my/function
-opper my/function Hello, world!
-echo "Hello, world!" | opper my/function
-echo "Hello, world!" | opper my/function - print the first word`)
-	return nil
-}
 
 type CommandParser struct{}
 
@@ -38,9 +11,8 @@ func NewCommandParser() *CommandParser {
 	return &CommandParser{}
 }
 
-func (p *CommandParser) Parse(args []string) (Commander, error) {
-	// Show help if no arguments or help flags are provided
-	if len(args) < 2 || args[1] == "-h" || args[1] == "--help" || args[1] == "help" {
+func (p *CommandParser) Parse(args []string) (Command, error) {
+	if len(args) < 2 {
 		return &HelpCommand{}, nil
 	}
 
@@ -53,12 +25,37 @@ func (p *CommandParser) Parse(args []string) (Commander, error) {
 		return p.parseListCommand(args[2:])
 	case "-g", "--get":
 		return p.parseGetCommand(args[2:])
+	case "-lm", "--list-models":
+		filter := ""
+		if len(args) > 2 {
+			filter = args[2]
+		}
+		return &ListModelsCommand{Filter: filter}, nil
+	case "-cm", "--create-model":
+		if len(args) < 5 {
+			return nil, fmt.Errorf("usage: -cm <name> <identifier> <api_key> [extra_json]")
+		}
+		extra := "{}"
+		if len(args) > 5 {
+			extra = args[5]
+		}
+		return &CreateModelCommand{
+			Name:       args[2],
+			Identifier: args[3],
+			APIKey:     args[4],
+			Extra:      extra,
+		}, nil
+	case "-dm", "--delete-model":
+		if len(args) < 3 {
+			return nil, fmt.Errorf("usage: -dm <model_name>")
+		}
+		return &DeleteModelCommand{Name: args[2]}, nil
 	default:
 		return p.parseChatCommand(args[1:])
 	}
 }
 
-func (p *CommandParser) parseCreateCommand(args []string) (Commander, error) {
+func (p *CommandParser) parseCreateCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("function name required for creation")
 	}
@@ -73,7 +70,7 @@ func (p *CommandParser) parseCreateCommand(args []string) (Commander, error) {
 	return cmd, nil
 }
 
-func (p *CommandParser) parseDeleteCommand(args []string) (Commander, error) {
+func (p *CommandParser) parseDeleteCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("function name required for deletion")
 	}
@@ -87,7 +84,7 @@ func (p *CommandParser) parseDeleteCommand(args []string) (Commander, error) {
 	return cmd, nil
 }
 
-func (p *CommandParser) parseListCommand(args []string) (Commander, error) {
+func (p *CommandParser) parseListCommand(args []string) (Command, error) {
 	filter := ""
 	if len(args) > 0 {
 		filter = args[0]
@@ -100,7 +97,7 @@ func (p *CommandParser) parseListCommand(args []string) (Commander, error) {
 	return cmd, nil
 }
 
-func (p *CommandParser) parseGetCommand(args []string) (Commander, error) {
+func (p *CommandParser) parseGetCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("function path required for retrieval")
 	}
@@ -114,7 +111,7 @@ func (p *CommandParser) parseGetCommand(args []string) (Commander, error) {
 	return cmd, nil
 }
 
-func (p *CommandParser) parseChatCommand(args []string) (Commander, error) {
+func (p *CommandParser) parseChatCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("function name required for chat")
 	}

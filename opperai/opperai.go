@@ -207,3 +207,78 @@ func (c *Client) GetFunctionByPath(ctx context.Context, functionPath string) (*F
 
 	return &function, nil
 }
+
+// ListCustomLanguageModels retrieves all custom language models
+func (c *Client) ListCustomLanguageModels(ctx context.Context) ([]CustomLanguageModel, error) {
+	resp, err := c.DoRequest(ctx, http.MethodGet, "/v1/custom-language-models", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to list models with status %s", resp.Status)
+	}
+
+	var models []CustomLanguageModel
+	if err := json.NewDecoder(resp.Body).Decode(&models); err != nil {
+		return nil, err
+	}
+
+	return models, nil
+}
+
+// CreateCustomLanguageModel creates a new custom language model
+func (c *Client) CreateCustomLanguageModel(ctx context.Context, model CustomLanguageModel) error {
+	data, err := json.Marshal(model)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.DoRequest(ctx, http.MethodPost, "/v1/custom-language-models", bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to create model with status %s", resp.Status)
+	}
+
+	return nil
+}
+
+// DeleteCustomLanguageModel deletes a custom language model by name
+func (c *Client) DeleteCustomLanguageModel(ctx context.Context, name string) error {
+	resp, err := c.DoRequest(ctx, http.MethodDelete, fmt.Sprintf("/v1/custom-language-models/%s", name), nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to delete model with status %s", resp.Status)
+	}
+
+	return nil
+}
+
+// UpdateCustomLanguageModel updates an existing custom language model
+func (c *Client) UpdateCustomLanguageModel(ctx context.Context, name string, model CustomLanguageModel) error {
+	data, err := json.Marshal(model)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.DoRequest(ctx, http.MethodPut, fmt.Sprintf("/v1/custom-language-models/%s", name), bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to update model with status %s", resp.Status)
+	}
+
+	return nil
+}
