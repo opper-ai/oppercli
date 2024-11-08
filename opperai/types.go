@@ -28,11 +28,17 @@ type FunctionResponse struct {
 
 // FunctionDescription represents the description of a function.
 type FunctionDescription struct {
-	ID           *int                   `json:"id"`
-	Path         string                 `json:"path"`
-	Description  string                 `json:"description"`
-	InputSchema  map[string]interface{} `json:"input_schema"` // Use map[string]interface{} to represent a JSON object.
-	OutSchema    map[string]interface{} `json:"out_schema"`   // Use map[string]interface{} to represent a JSON object.
-	Instructions string                 `json:"instructions"`
-	IndexIDs     []int                  `json:"index_ids"`
+	Path         string            `json:"path"`
+	Instructions string            `json:"instructions"`
+	Description  string            `json:"description"`
+	Model        string            `json:"model,omitempty"`        // For custom model support
+	IndexConfig  *IndexConfig      `json:"index_config,omitempty"` // For index support
+	Metadata     map[string]string `json:"metadata,omitempty"`     // For additional configuration
+}
+
+type IndexConfig struct {
+	Type       string            `json:"type"`       // e.g., "vector", "keyword"
+	Source     string            `json:"source"`     // Data source for the index
+	Settings   map[string]string `json:"settings"`   // Index-specific settings
+	Dimensions int               `json:"dimensions"` // For vector indexes
 }
