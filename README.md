@@ -1,73 +1,94 @@
 # Opper CLI
 
+Command line interface for Opper AI.
+
 ## Installation
 
+
+
+## Usage
+
+Before you can start using oppercli, you need to export your Opper API key to your environment:
+
 ```shell
-brew install golang
-make install
 export OPPER_API_KEY=op-yourkeyhere
 ```
 
-## Functions
+Typing `opper` will show you the following help:
 
-### Create
+```
+Usage:
+  opper <command> <subcommand> [arguments]
 
-```shell
-opper -c joch/joker Respond to input with Linux or unix related jokes
+Commands:
+  functions:
+    list [filter]              List functions, optionally filtering by name
+    create <name> [instructions] Create a new function
+    delete <name>              Delete a function
+    get <name>                 Get function details
+
+  models:
+    list [filter]              List custom language models
+    create <name> <litellm-id> <key> [extra] Create a new model
+      extra: JSON string with additional options
+      Example: '{"api_base": "https://myoaiservice.azure.com", "api_version": "2024-06-01"}'
+    delete <name>              Delete a model
+    get <name>                 Get model details
+
+  help                         Show this help message
+
+Call functions:
+  opper <function-name> [message]  Chat with a function
+
+Examples:
+  opper functions create my/function "Respond to questions. Be nice."
+  opper functions list my/
+  opper models create my-model my-id api-key '{"api_base": "https://myoaiservice.azure.com", "api_version": "2024-06-01"}'
+  opper my/function "Hello, world!"
 ```
 
-### Delete
-
-```shell
-opper -d joch/joker
-```
-
-### List
-
-List all functions:
-
-```shell
-opper -l
-```
-
-Filter the list by a search term:
-
-```shell
-opper -l joch
-```
-
-### Get
-
-```shell
-opper -l joch/joker
-```
-
-## Working with command line arguments and stdin
+## Command line arguments and stdin
 
 The prompt can be passed on the command line, or as standard input. If you want to pass standard input, and combine it with a prompt, add a `-` on the command line before writing the prompt.
 
 ```shell
-opper joch/gpt4 tell me a short joke
-echo "tell me a short joke" | opper joch/gpt4
-echo '{"name":"Johnny", "age":41}' | opper joch/gpt4 - only print age
+opper gpt4 tell me a short joke
+echo "tell me a short joke" | opper gpt4
+echo '{"name":"Johnny", "age":41}' | opper gpt4 - only print age
 ```
 
-## Examples
+## Adding a custom model
+
+Execution of custom langauge models are done through [LiteLLM](https://docs.litellm.ai/docs/providers). In order for Opper to call your model, you need to provide configuraion appropriate for your model deployment.
+
+Consider the following call:
 
 ```shell
-opper -c joch/gpt4
-
-opper joch/gpt4 tell me a short joke
+opper models create my-model my-id api-key '{"api_base": "https://myoaiservice.azure.com", "api_version": "2024-06-01"}'
 ```
 
-```shell
-opper -c joch/diff You are provided with a diff. Generate a summary of the changes in bullet form.
+- `my-model` is the friendly name for this model in Opper, which users in your organization use when calling this model.
+- `my-id` is the LiteLLM identifier for this model. Please see the [LiteLLM Providers](https://docs.litellm.ai/docs/providers) documentation for information on this.
+- `api-key` is the API key required to connect to this service.
+- `json extra` is a JSON object to pass model and deployment specific configuration as required by LiteLLM.
 
-git diff | opper joch/diff
+The following are examples for common cloud model deployments:
+
+### Azure
+
+In this example, we are using a GPT4 deployment in Azure. It has the following configuration:
+
+```shell
+opper models create example/my-gpt4 azure/gpt4-production my-api-key-here '{"api_base": "https://my-gpt4-deployment.openai.azure.com/", "api_version": "2024-06-01"}'
 ```
 
-```shell
-opper -c joch/shell You are a bash shell assistant. Help the user with creating commands or provide help. Be concise. When responding with a command, just respond with the command. Do not add markdown formatting.
+- Endpoint: https://my-gpt4-deployment.openai.azure.com/
+- Deployment name: gpt4-production, which becomes azure/gpt4-production
+- API key: my-api-key-here
 
-opper joch/shell git revert to last commit
+## Building from source
+
+```shell
+brew install golang
+make install
 ```

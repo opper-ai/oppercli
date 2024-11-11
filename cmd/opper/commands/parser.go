@@ -89,7 +89,7 @@ func (p *CommandParser) parseModelsCommand(args []string) (Command, error) {
 		return &ListModelsCommand{Filter: filter}, nil
 	case "create":
 		if len(args) < 4 {
-			return nil, fmt.Errorf("usage: models create <name> <identifier> <api_key> [extra_json]\n" +
+			return nil, fmt.Errorf("usage: models create <name> <litellm identifier> <api_key> [extra_json]\n" +
 				"Example extra_json: '{\"api_base\": \"https://myoaiservice.azure.com\", \"api_version\": \"2024-06-01\"}'")
 		}
 
