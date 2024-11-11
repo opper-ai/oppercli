@@ -4,7 +4,14 @@ Command line interface for Opper AI.
 
 ## Installation
 
+To install oppercli, download the latest release for your platform on the [Github Releases](https://github.com/opper-ai/oppercli/releases) page. To easily use it, move it to your path.
 
+Example on MacOS:
+
+```shell
+sudo curl -o /usr/local/bin/opper https://github.com/opper-ai/oppercli/releases/latest/download/opper-darwin-arm64
+sudo chmod 755 /usr/local/bin/opper
+```
 
 ## Usage
 
