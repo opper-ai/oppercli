@@ -70,3 +70,34 @@ func (c *DeleteModelCommand) Execute(ctx context.Context, client *opperai.Client
 	fmt.Printf("Successfully deleted model: %s\n", c.Name)
 	return nil
 }
+
+// GetModelCommand handles retrieving custom language model details
+type GetModelCommand struct {
+	Name string
+}
+
+func (c *GetModelCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	model, err := client.GetCustomLanguageModel(ctx, c.Name)
+	if err != nil {
+		return fmt.Errorf("error getting model: %w", err)
+	}
+
+	if model == nil {
+		fmt.Printf("Model not found: %s\n", c.Name)
+		return nil
+	}
+
+	// Pretty print the model details
+	fmt.Printf("Name: %s\n", model.Name)
+	fmt.Printf("Identifier: %s\n", model.Identifier)
+	fmt.Printf("Created: %s\n", model.CreatedAt)
+	fmt.Printf("Updated: %s\n", model.UpdatedAt)
+	if model.Extra != nil {
+		extraJSON, err := json.MarshalIndent(model.Extra, "", "  ")
+		if err == nil {
+			fmt.Printf("Extra:\n%s\n", string(extraJSON))
+		}
+	}
+
+	return nil
+}

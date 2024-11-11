@@ -250,13 +250,14 @@ func (c *Client) CreateCustomLanguageModel(ctx context.Context, model CustomLang
 
 // DeleteCustomLanguageModel deletes a custom language model by name
 func (c *Client) DeleteCustomLanguageModel(ctx context.Context, name string) error {
-	resp, err := c.DoRequest(ctx, http.MethodDelete, fmt.Sprintf("/v1/custom-language-models/%s", name), nil)
+	resp, err := c.DoRequest(ctx, http.MethodDelete, fmt.Sprintf("/v1/custom-language-models/by-name/%s", name), nil)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	// 204 No Content is a success status
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete model with status %s", resp.Status)
 	}
 
@@ -270,7 +271,7 @@ func (c *Client) UpdateCustomLanguageModel(ctx context.Context, name string, mod
 		return err
 	}
 
-	resp, err := c.DoRequest(ctx, http.MethodPut, fmt.Sprintf("/v1/custom-language-models/%s", name), bytes.NewBuffer(data))
+	resp, err := c.DoRequest(ctx, http.MethodPatch, fmt.Sprintf("/v1/custom-language-models/by-name/%s", name), bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -281,4 +282,28 @@ func (c *Client) UpdateCustomLanguageModel(ctx context.Context, name string, mod
 	}
 
 	return nil
+}
+
+// GetCustomLanguageModel retrieves a custom language model by name
+func (c *Client) GetCustomLanguageModel(ctx context.Context, name string) (*CustomLanguageModel, error) {
+	resp, err := c.DoRequest(ctx, http.MethodGet, fmt.Sprintf("/v1/custom-language-models/by-name/%s", name), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil // Model not found
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get model with status %s", resp.Status)
+	}
+
+	var model CustomLanguageModel
+	if err := json.NewDecoder(resp.Body).Decode(&model); err != nil {
+		return nil, err
+	}
+
+	return &model, nil
 }

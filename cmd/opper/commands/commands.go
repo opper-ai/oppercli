@@ -21,29 +21,29 @@ type BaseCommand struct {
 type HelpCommand struct{}
 
 func (c *HelpCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	fmt.Println(`Usage:
--c <function name> [instructions]     Create a function with the specified name and optional instructions.
--d <function name>                    Delete the specified function.
--l [list filter]                      List functions, optionally filtering by the provided filter.
--g <function path>                    Retrieve a function by its path.
-<function name> [prompt]              Initiate a chat with the specified function name and optional prompt.
-                                      If message content is not provided directly, it can be read from stdin.
-                                      Pass both stdin and a prompt by passing '-' before the prompt.
--lm [filter]                         List custom language models, optionally filtering by name.
--cm <name> <id> <key> [extra]        Create a custom language model.
--dm <name>                           Delete a custom language model.
-
-Examples:
-opper -c my/function Respond to questions. Be nice, and use emojis.
-opper -d my/function
-opper -l my/
-opper -g my/function
-opper my/function Hello, world!
-echo "Hello, world!" | opper my/function
-echo "Hello, world!" | opper my/function - print the first word
-opper -lm my/
-opper -cm my/model my-id api-key "{}"
-opper -dm my/model`)
+	fmt.Println("Usage:")
+	fmt.Println("  opper <command> <subcommand> [arguments]")
+	fmt.Println("\nCommands:")
+	fmt.Println("  functions:")
+	fmt.Println("    list [filter]              List functions, optionally filtering by name")
+	fmt.Println("    create <name> [instructions] Create a new function")
+	fmt.Println("    delete <name>              Delete a function")
+	fmt.Println("    get <name>                 Get function details")
+	fmt.Println("\n  models:")
+	fmt.Println("    list [filter]              List custom language models")
+	fmt.Println("    create <name> <id> <key> [extra] Create a new model")
+	fmt.Println("      extra: JSON string with additional options")
+	fmt.Println("      Example: '{\"temperature\": 0.7, \"model\": \"gpt-4\"}'")
+	fmt.Println("    delete <name>              Delete a model")
+	fmt.Println("    get <name>                 Get model details")
+	fmt.Println("\n  help                         Show this help message")
+	fmt.Println("\nLegacy Usage (still supported):")
+	fmt.Println("  opper <function-name> [message]  Chat with a function")
+	fmt.Println("\nExamples:")
+	fmt.Println("  opper functions create my/function \"Respond to questions. Be nice.\"")
+	fmt.Println("  opper functions list my/")
+	fmt.Println("  opper models create my-model my-id api-key '{\"temperature\": 0.7}'")
+	fmt.Println("  opper my/function \"Hello, world!\"")
 	return nil
 }
 

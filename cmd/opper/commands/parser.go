@@ -16,101 +16,111 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 		return &HelpCommand{}, nil
 	}
 
+	// First argument after program name is the module
 	switch args[1] {
-	case "-c", "--create":
-		return p.parseCreateCommand(args[2:])
-	case "-d", "--delete":
-		return p.parseDeleteCommand(args[2:])
-	case "-l", "--list":
-		return p.parseListCommand(args[2:])
-	case "-g", "--get":
-		return p.parseGetCommand(args[2:])
-	case "-lm", "--list-models":
-		filter := ""
-		if len(args) > 2 {
-			filter = args[2]
-		}
-		return &ListModelsCommand{Filter: filter}, nil
-	case "-cm", "--create-model":
-		if len(args) < 5 {
-			return nil, fmt.Errorf("usage: -cm <name> <identifier> <api_key> [extra_json]")
-		}
-		extra := "{}"
-		if len(args) > 5 {
-			extra = args[5]
-		}
-		return &CreateModelCommand{
-			Name:       args[2],
-			Identifier: args[3],
-			APIKey:     args[4],
-			Extra:      extra,
-		}, nil
-	case "-dm", "--delete-model":
-		if len(args) < 3 {
-			return nil, fmt.Errorf("usage: -dm <model_name>")
-		}
-		return &DeleteModelCommand{Name: args[2]}, nil
+	case "functions":
+		return p.parseFunctionsCommand(args[2:])
+	case "models":
+		return p.parseModelsCommand(args[2:])
+	case "help":
+		return &HelpCommand{}, nil
 	default:
+		// Maintain backwards compatibility by treating the first arg as a function name
 		return p.parseChatCommand(args[1:])
 	}
 }
 
-func (p *CommandParser) parseCreateCommand(args []string) (Command, error) {
+func (p *CommandParser) parseFunctionsCommand(args []string) (Command, error) {
 	if len(args) < 1 {
-		return nil, fmt.Errorf("function name required for creation")
+		return nil, fmt.Errorf("functions subcommand required (list, create, delete, get)")
 	}
 
-	cmd := &CreateCommand{
-		BaseCommand: BaseCommand{
-			FunctionPath: args[0],
-		},
-		Instructions: strings.Join(args[1:], " "),
+	switch args[0] {
+	case "list":
+		filter := ""
+		if len(args) > 1 {
+			filter = args[1]
+		}
+		return &ListCommand{Filter: filter}, nil
+	case "create":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: functions create <name> [instructions]")
+		}
+		return &CreateCommand{
+			BaseCommand: BaseCommand{
+				FunctionPath: args[1],
+			},
+			Instructions: strings.Join(args[2:], " "),
+		}, nil
+	case "delete":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: functions delete <name>")
+		}
+		return &DeleteCommand{
+			BaseCommand: BaseCommand{
+				FunctionPath: args[1],
+			},
+		}, nil
+	case "get":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: functions get <name>")
+		}
+		return &GetCommand{
+			BaseCommand: BaseCommand{
+				FunctionPath: args[1],
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown functions subcommand: %s", args[0])
 	}
-
-	return cmd, nil
 }
 
-func (p *CommandParser) parseDeleteCommand(args []string) (Command, error) {
+func (p *CommandParser) parseModelsCommand(args []string) (Command, error) {
 	if len(args) < 1 {
-		return nil, fmt.Errorf("function name required for deletion")
+		return nil, fmt.Errorf("models subcommand required (list, create, delete, get)")
 	}
 
-	cmd := &DeleteCommand{
-		BaseCommand: BaseCommand{
-			FunctionPath: args[0],
-		},
-	}
+	switch args[0] {
+	case "list":
+		filter := ""
+		if len(args) > 1 {
+			filter = args[1]
+		}
+		return &ListModelsCommand{Filter: filter}, nil
+	case "create":
+		if len(args) < 4 {
+			return nil, fmt.Errorf("usage: models create <name> <identifier> <api_key> [extra_json]\n" +
+				"Example extra_json: '{\"temperature\": 0.7, \"model\": \"gpt-4\"}'")
+		}
 
-	return cmd, nil
+		// Join all remaining arguments as they might be part of the JSON
+		extra := "{}"
+		if len(args) > 4 {
+			extra = strings.Join(args[4:], " ")
+		}
+
+		return &CreateModelCommand{
+			Name:       args[1],
+			Identifier: args[2],
+			APIKey:     args[3],
+			Extra:      extra,
+		}, nil
+	case "delete":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: models delete <name>")
+		}
+		return &DeleteModelCommand{Name: args[1]}, nil
+	case "get":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: models get <name>")
+		}
+		return &GetModelCommand{Name: args[1]}, nil
+	default:
+		return nil, fmt.Errorf("unknown models subcommand: %s", args[0])
+	}
 }
 
-func (p *CommandParser) parseListCommand(args []string) (Command, error) {
-	filter := ""
-	if len(args) > 0 {
-		filter = args[0]
-	}
-
-	cmd := &ListCommand{
-		Filter: filter,
-	}
-
-	return cmd, nil
-}
-
-func (p *CommandParser) parseGetCommand(args []string) (Command, error) {
-	if len(args) < 1 {
-		return nil, fmt.Errorf("function path required for retrieval")
-	}
-
-	cmd := &GetCommand{
-		BaseCommand: BaseCommand{
-			FunctionPath: args[0],
-		},
-	}
-
-	return cmd, nil
-}
-
+// Keep the existing parseChatCommand for backwards compatibility
 func (p *CommandParser) parseChatCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("function name required for chat")
