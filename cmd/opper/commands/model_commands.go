@@ -20,11 +20,36 @@ func (c *ListModelsCommand) Execute(ctx context.Context, client *opperai.Client)
 		return fmt.Errorf("error listing models: %w", err)
 	}
 
+	// Find the longest name and identifier for padding
+	maxNameLen := 4 // minimum length for "NAME"
+	maxIdLen := 10  // minimum length for "IDENTIFIER"
 	for _, model := range models {
-		if c.Filter == "" || strings.Contains(model.Name, c.Filter) {
-			fmt.Printf("Name: %s, Identifier: %s\n", model.Name, model.Identifier)
+		if len(model.Name) > maxNameLen {
+			maxNameLen = len(model.Name)
+		}
+		if len(model.Identifier) > maxIdLen {
+			maxIdLen = len(model.Identifier)
 		}
 	}
+
+	// Print header
+	fmt.Printf("\n%-*s  %-*s  %s\n", maxNameLen, "NAME", maxIdLen, "IDENTIFIER", "CREATED")
+	fmt.Printf("%s  %s  %s\n",
+		strings.Repeat("─", maxNameLen),
+		strings.Repeat("─", maxIdLen),
+		strings.Repeat("─", 19))
+
+	for _, model := range models {
+		if c.Filter == "" || strings.Contains(model.Name, c.Filter) {
+			fmt.Printf("%-*s  %-*s  %s\n",
+				maxNameLen,
+				model.Name,
+				maxIdLen,
+				model.Identifier,
+				model.CreatedAt)
+		}
+	}
+	fmt.Println()
 	return nil
 }
 

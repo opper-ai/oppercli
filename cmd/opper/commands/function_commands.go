@@ -34,12 +34,27 @@ func (c *ListCommand) Execute(ctx context.Context, client *opperai.Client) error
 		return fmt.Errorf("error listing functions: %w", err)
 	}
 
+	// Find the longest path for padding
+	maxPathLen := 0
 	for _, function := range functions {
-		if c.Filter == "" || strings.Contains(function.Path, c.Filter) {
-			fmt.Printf("Path: %s, Description: %s\n",
-				function.Path, function.Description)
+		if len(function.Path) > maxPathLen {
+			maxPathLen = len(function.Path)
 		}
 	}
+
+	// Print header
+	fmt.Printf("\n%-*s  %s\n", maxPathLen, "PATH", "DESCRIPTION")
+	fmt.Printf("%s  %s\n", strings.Repeat("─", maxPathLen), strings.Repeat("─", 50))
+
+	for _, function := range functions {
+		if c.Filter == "" || strings.Contains(function.Path, c.Filter) {
+			fmt.Printf("%-*s  %s\n",
+				maxPathLen,
+				function.Path,
+				function.Description)
+		}
+	}
+	fmt.Println()
 	return nil
 }
 
