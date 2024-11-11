@@ -90,7 +90,7 @@ func (p *CommandParser) parseModelsCommand(args []string) (Command, error) {
 	case "create":
 		if len(args) < 4 {
 			return nil, fmt.Errorf("usage: models create <name> <identifier> <api_key> [extra_json]\n" +
-				"Example extra_json: '{\"temperature\": 0.7, \"model\": \"gpt-4\"}'")
+				"Example extra_json: '{\"api_base\": \"https://myoaiservice.azure.com\", \"api_version\": \"2024-06-01\"}'")
 		}
 
 		// Join all remaining arguments as they might be part of the JSON
