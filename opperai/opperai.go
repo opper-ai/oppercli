@@ -100,34 +100,29 @@ func (c *Client) Chat(ctx context.Context, functionPath string, data ChatPayload
 }
 
 // CreateFunction creates a new function.
-func (c *Client) CreateFunction(ctx context.Context, function FunctionDescription) (int, error) {
-	serializedData, err := json.Marshal(function)
+func (c *Client) CreateFunction(ctx context.Context, function *Function) (*FunctionDescription, error) {
+	data, err := json.Marshal(function)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	resp, err := c.DoRequest(ctx, http.MethodPost, "/api/v1/functions", bytes.NewBuffer(serializedData))
+	resp, err := c.DoRequest(ctx, http.MethodPost, "/v1/functions", bytes.NewBuffer(data))
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("failed to create function %s with status %s", function.Path, resp.Status)
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to create function with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return 0, err
+	var createdFunction FunctionDescription
+	if err := json.NewDecoder(resp.Body).Decode(&createdFunction); err != nil {
+		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
 
-	var response map[string]int
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return 0, err
-	}
-
-	return response["id"], nil
+	return &createdFunction, nil
 }
 
 // DeleteFunction deletes a function by its ID or path.

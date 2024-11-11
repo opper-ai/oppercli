@@ -53,3 +53,10 @@ type CustomLanguageModel struct {
 	CreatedAt      string                 `json:"created_at"`
 	UpdatedAt      string                 `json:"updated_at"`
 }
+
+// Function represents an AI function
+type Function struct {
+	Path         string `json:"path"`
+	Description  string `json:"description,omitempty"`
+	Instructions string `json:"instructions"`
+}

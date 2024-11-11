@@ -37,7 +37,7 @@ func (c *HelpCommand) Execute(ctx context.Context, client *opperai.Client) error
 	fmt.Println("    delete <name>              Delete a model")
 	fmt.Println("    get <name>                 Get model details")
 	fmt.Println("\n  help                         Show this help message")
-	fmt.Println("\nLegacy Usage (still supported):")
+	fmt.Println("\nCall functions (still supported):")
 	fmt.Println("  opper <function-name> [message]  Chat with a function")
 	fmt.Println("\nExamples:")
 	fmt.Println("  opper functions create my/function \"Respond to questions. Be nice.\"")
@@ -46,28 +46,3 @@ func (c *HelpCommand) Execute(ctx context.Context, client *opperai.Client) error
 	fmt.Println("  opper my/function \"Hello, world!\"")
 	return nil
 }
-
-// CreateCommand handles function creation
-type CreateCommand struct {
-	BaseCommand
-	Instructions string
-	Model        string // For future custom model support
-}
-
-func (c *CreateCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	function := opperai.FunctionDescription{
-		Path:         c.FunctionPath,
-		Instructions: c.Instructions,
-		// Model field will be added to FunctionDescription in types.go
-	}
-
-	_, err := client.CreateFunction(ctx, function)
-	if err != nil {
-		return fmt.Errorf("error creating function: %w", err)
-	}
-
-	fmt.Println("Function created successfully.")
-	return nil
-}
-
-// Add other command structs (DeleteCommand, ListCommand, etc.)

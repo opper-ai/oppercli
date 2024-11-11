@@ -76,3 +76,21 @@ func (c *GetCommand) Execute(ctx context.Context, client *opperai.Client) error 
 		function.Path, function.Description, function.Instructions)
 	return nil
 }
+
+// CreateCommand handles function creation
+type CreateCommand struct {
+	BaseCommand
+	Instructions string
+}
+
+func (c *CreateCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	createdFunction, err := client.CreateFunction(ctx, &opperai.Function{
+		Path:         c.FunctionPath,
+		Instructions: c.Instructions,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating function: %w", err)
+	}
+	fmt.Printf("Function created successfully: %s\n", createdFunction.Path)
+	return nil
+}
