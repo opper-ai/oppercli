@@ -28,4 +28,3 @@ class Opper < Formula
     system "#{bin}/opper", "--version"
   end
 end
-EOF 
