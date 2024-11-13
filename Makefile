@@ -11,4 +11,22 @@ clean:
 	go clean
 	rm -f bin/opper
 
+VERSION ?= 0.1.0
+LDFLAGS := -X main.Version=$(VERSION)
+
+.PHONY: release
+release: clean
+	GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o dist/opper-darwin-arm64 ./cmd/opper
+	GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/opper-darwin-amd64 ./cmd/opper
+	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/opper-linux-amd64 ./cmd/opper
+	cd dist && \
+		sha256sum opper-darwin-arm64 > opper-darwin-arm64.sha256 && \
+		sha256sum opper-darwin-amd64 > opper-darwin-amd64.sha256 && \
+		sha256sum opper-linux-amd64 > opper-linux-amd64.sha256
+
+.PHONY: clean
+clean:
+	rm -rf dist/
+	mkdir -p dist/
+
 .PHONY: build install clean

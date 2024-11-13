@@ -4,6 +4,14 @@ Command line interface for Opper AI.
 
 ## Installation
 
+### Using Homebrew
+
+```shell
+brew install opper-ai/oppercli/opper
+```
+
+### Manual Installation
+
 To install oppercli, download the latest release for your platform on the [Github Releases](https://github.com/opper-ai/oppercli/releases) page. To easily use it, move it to your path.
 
 Example on MacOS:
