@@ -6,17 +6,17 @@ class Opper < Formula
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-darwin-arm64"
-      sha256 "54eb6604377ac042e9316803a60edf9d65ba24495f4b12d3a8d4840e894caaf4"
+      sha256 "61f6c4c776abd34de5006b1b8dbc8b4ec83e22b3d9de2a1691b4b808226fd170"
     else
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-darwin-amd64"
-      sha256 "b6eb845d05fe8b6ac7178cd7480890dd0da698a3c3832ef131af622f88cd9d4b"
+      sha256 "ab597deeafa885354c2e80c725cc7f4f0fb883c221cfe418f5b620a6d9e219a9"
     end
   end
 
   on_linux do
     if Hardware::CPU.intel?
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-linux-amd64"
-      sha256 "25a2bc0212c65745870c2814b445c6b346df09aaee28e61c95982ffaeb229277"
+      sha256 "ed11c2cb25e8c9a2493c91ec9f7caf208c20194cc5cff1d80b6f1a7e9020a1c7"
     end
   end
 
