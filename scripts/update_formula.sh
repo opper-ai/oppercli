@@ -15,8 +15,8 @@ DARWIN_ARM64_SHA=$(cat ./artifacts/opper-darwin-arm64.sha256 | cut -d ' ' -f 1)
 DARWIN_AMD64_SHA=$(cat ./artifacts/opper-darwin-amd64.sha256 | cut -d ' ' -f 1)
 LINUX_AMD64_SHA=$(cat ./artifacts/opper-linux-amd64.sha256 | cut -d ' ' -f 1)
 
-# Update the formula
-cat > HomebrewFormula/opper.rb << 'EOF'
+# Create the formula file
+cat > HomebrewFormula/opper.rb << ENDOFFILE
 class Opper < Formula
   desc "Command line interface for Opper AI"
   homepage "https://github.com/opper-ai/oppercli"
@@ -47,4 +47,4 @@ class Opper < Formula
     system "#{bin}/opper", "--version"
   end
 end
-EOF 
+ENDOFFILE 
