@@ -10,7 +10,15 @@ import (
 	"github.com/opper-ai/oppercli/opperai"
 )
 
+var Version = "dev"
+
 func main() {
+	// Add version flag handling
+	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
+		fmt.Printf("opper version %s\n", Version)
+		os.Exit(0)
+	}
+
 	// Read the API key from the environment variable
 	apiKey := os.Getenv("OPPER_API_KEY")
 	if apiKey == "" {
