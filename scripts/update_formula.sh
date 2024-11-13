@@ -15,27 +15,26 @@ DARWIN_ARM64_SHA=$(cat ./artifacts/opper-darwin-arm64.sha256 | cut -d ' ' -f 1)
 DARWIN_AMD64_SHA=$(cat ./artifacts/opper-darwin-amd64.sha256 | cut -d ' ' -f 1)
 LINUX_AMD64_SHA=$(cat ./artifacts/opper-linux-amd64.sha256 | cut -d ' ' -f 1)
 
-# Create the formula file
-cat > HomebrewFormula/opper.rb << ENDOFFILE
-class Opper < Formula
+# Create the formula file using printf to avoid heredoc issues
+printf 'class Opper < Formula
   desc "Command line interface for Opper AI"
   homepage "https://github.com/opper-ai/oppercli"
-  version "${VERSION}"
+  version "%s"
 
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-darwin-arm64"
-      sha256 "${DARWIN_ARM64_SHA}"
+      sha256 "%s"
     else
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-darwin-amd64"
-      sha256 "${DARWIN_AMD64_SHA}"
+      sha256 "%s"
     end
   end
 
   on_linux do
     if Hardware::CPU.intel?
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-linux-amd64"
-      sha256 "${LINUX_AMD64_SHA}"
+      sha256 "%s"
     end
   end
 
@@ -47,4 +46,4 @@ class Opper < Formula
     system "#{bin}/opper", "--version"
   end
 end
-ENDOFFILE 
+' "$VERSION" "$DARWIN_ARM64_SHA" "$DARWIN_AMD64_SHA" "$LINUX_AMD64_SHA" > HomebrewFormula/opper.rb 
