@@ -22,6 +22,8 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 		return p.parseFunctionsCommand(args[2:])
 	case "models":
 		return p.parseModelsCommand(args[2:])
+	case "indexes":
+		return p.parseIndexesCommand(args[2:])
 	case "help":
 		return &HelpCommand{}, nil
 	default:
@@ -139,4 +141,71 @@ func (p *CommandParser) parseChatCommand(args []string) (Command, error) {
 	}
 
 	return cmd, nil
+}
+
+func (p *CommandParser) parseIndexesCommand(args []string) (Command, error) {
+	if len(args) < 1 {
+		return nil, fmt.Errorf("indexes subcommand required (list, create, delete, get, query, add, upload)")
+	}
+
+	switch args[0] {
+	case "list":
+		filter := ""
+		if len(args) > 1 {
+			filter = args[1]
+		}
+		return &ListIndexesCommand{Filter: filter}, nil
+	case "create":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: indexes create <name>")
+		}
+		return &CreateIndexCommand{Name: args[1]}, nil
+	case "delete":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: indexes delete <name>")
+		}
+		return &DeleteIndexCommand{Name: args[1]}, nil
+	case "get":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: indexes get <name>")
+		}
+		return &GetIndexCommand{Name: args[1]}, nil
+	case "query":
+		if len(args) < 3 {
+			return nil, fmt.Errorf("usage: indexes query <name> <query> [filter_json]")
+		}
+		filter := "{}"
+		if len(args) > 3 {
+			filter = args[3]
+		}
+		return &QueryIndexCommand{
+			Name:   args[1],
+			Query:  args[2],
+			Filter: filter,
+		}, nil
+	case "add":
+		if len(args) < 4 {
+			return nil, fmt.Errorf("usage: indexes add <name> <key> <content> [metadata_json]")
+		}
+		metadata := "{}"
+		if len(args) > 4 {
+			metadata = args[4]
+		}
+		return &AddToIndexCommand{
+			Name:     args[1],
+			Key:      args[2],
+			Content:  args[3],
+			Metadata: metadata,
+		}, nil
+	case "upload":
+		if len(args) < 3 {
+			return nil, fmt.Errorf("usage: indexes upload <name> <file_path>")
+		}
+		return &UploadToIndexCommand{
+			Name:     args[1],
+			FilePath: args[2],
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown indexes subcommand: %s", args[0])
+	}
 }

@@ -51,6 +51,15 @@ Commands:
     delete <name>              Delete a model
     get <name>                 Get model details
 
+  indexes:
+    list [filter]              List indexes, optionally filtering by name
+    create <name>              Create a new index
+    delete <name>              Delete an index
+    get <name>                 Get index details
+    query <name> <query> [filter_json]  Query an index
+    add <name> <key> <content> [metadata_json]  Add content to an index
+    upload <name> <file_path>  Upload and index a file (PDF, CSV, TXT)
+
   help                         Show this help message
 
 Call functions:

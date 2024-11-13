@@ -1,5 +1,9 @@
 package opperai
 
+import (
+	"time"
+)
+
 // Message represents a single message in a chat.
 type Message struct {
 	Role    string `json:"role"`
@@ -59,4 +63,41 @@ type Function struct {
 	Path         string `json:"path"`
 	Description  string `json:"description,omitempty"`
 	Instructions string `json:"instructions"`
+}
+
+type Index struct {
+	ID        int       `json:"id"`
+	UUID      string    `json:"uuid"`
+	Name      string    `json:"name"`
+	Files     []File    `json:"files"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type File struct {
+	ID               int       `json:"id"`
+	OriginalFilename string    `json:"original_filename"`
+	Size             int64     `json:"size"`
+	IndexStatus      string    `json:"index_status"`
+	Key              string    `json:"key"`
+	UUID             string    `json:"uuid"`
+	CreatedAt        time.Time `json:"created_at"`
+}
+
+type Document struct {
+	Key      string                 `json:"key"`
+	Content  string                 `json:"content"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type RetrievalResponse struct {
+	Key      string                 `json:"key"`
+	Content  string                 `json:"content"`
+	Score    float64                `json:"score"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type Filter struct {
+	Field     string      `json:"field"`
+	Operation string      `json:"operation"`
+	Value     interface{} `json:"value"`
 }

@@ -8,7 +8,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 // Client is the HTTP client for the Opper AI API.
@@ -16,6 +19,7 @@ type Client struct {
 	APIKey  string
 	BaseURL string
 	client  *http.Client
+	Indexes *IndexesClient
 }
 
 // NewClient creates a new Client with an optional baseURL.
@@ -24,10 +28,12 @@ func NewClient(apiKey string, baseURL ...string) *Client {
 	if len(baseURL) > 0 && baseURL[0] != "" {
 		defaultBaseURL = baseURL[0]
 	}
-	return &Client{
+	client := &Client{
 		APIKey:  apiKey,
 		BaseURL: defaultBaseURL,
 	}
+	client.Indexes = newIndexesClient(client)
+	return client
 }
 
 // DoRequest executes an HTTP request.
@@ -301,4 +307,66 @@ func (c *Client) GetCustomLanguageModel(ctx context.Context, name string) (*Cust
 	}
 
 	return &model, nil
+}
+
+func (c *Client) uploadFile(url string, fields map[string]string, file *os.File) error {
+	// Create a pipe to write the multipart form data
+	pr, pw := io.Pipe()
+	writer := multipart.NewWriter(pw)
+
+	// Start a goroutine to write the form data
+	go func() {
+		defer pw.Close()
+
+		// First write all the form fields from the presigned URL
+		for key, value := range fields {
+			if err := writer.WriteField(key, value); err != nil {
+				pw.CloseWithError(fmt.Errorf("failed to write field %s: %v", key, err))
+				return
+			}
+		}
+
+		// Create the form file field
+		part, err := writer.CreateFormFile("file", filepath.Base(file.Name()))
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("failed to create form file: %v", err))
+			return
+		}
+
+		// Copy the file content to the form field
+		if _, err := io.Copy(part, file); err != nil {
+			pw.CloseWithError(fmt.Errorf("failed to copy file content: %v", err))
+			return
+		}
+
+		// Close the multipart writer
+		if err := writer.Close(); err != nil {
+			pw.CloseWithError(fmt.Errorf("failed to close writer: %v", err))
+			return
+		}
+	}()
+
+	// Create the HTTP request
+	req, err := http.NewRequest("POST", url, pr)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+
+	// Set the content type
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// Send the request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to upload file: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check the response
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("upload failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }
