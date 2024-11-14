@@ -24,7 +24,7 @@ sudo chmod 755 /usr/local/bin/opper
 
 ## Usage
 
-Before you can start using oppercli, you need to export your Opper API key to your environment:
+When first starting oppercli, it will prompt you for your API key. You can alternatively provide an envrionment variable with the key instead:
 
 ```shell
 export OPPER_API_KEY=op-yourkeyhere
