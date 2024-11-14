@@ -1,16 +1,132 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/opper-ai/oppercli/cmd/opper/commands"
+	"github.com/opper-ai/oppercli/cmd/opper/config"
 	"github.com/opper-ai/oppercli/opperai"
 )
 
 var Version = "dev"
+
+func getAPIKey() (string, error) {
+	// Parse flags early to get key name
+	keyName := flag.String("key", "", "Name of the API key to use")
+	flag.Parse()
+
+	// First check environment variable for specific key name
+	if envKeyName := os.Getenv("OPPER_KEY_NAME"); envKeyName != "" {
+		*keyName = envKeyName
+	}
+
+	// Check environment variable for API key
+	if apiKey := os.Getenv("OPPER_API_KEY"); apiKey != "" {
+		return apiKey, nil
+	}
+
+	// Check config file
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("could not get home directory: %w", err)
+	}
+
+	configPath := filepath.Join(homeDir, ".oppercli")
+	cfg, err := readConfig(configPath)
+	if err == nil {
+		if apiKey := cfg.GetAPIKey(*keyName); apiKey != "" {
+			return apiKey, nil
+		}
+	}
+
+	// If no key found, prompt user
+	fmt.Printf("No API key found in environment variable OPPER_API_KEY or config file ~/.oppercli")
+	if *keyName != "" {
+		fmt.Printf(" for key '%s'", *keyName)
+	}
+	fmt.Println()
+
+	fmt.Print("Would you like to save an API key now? (y/n): ")
+	reader := bufio.NewReader(os.Stdin)
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("error reading input: %w", err)
+	}
+
+	response = strings.TrimSpace(strings.ToLower(response))
+	if response != "y" && response != "yes" {
+		return "", fmt.Errorf("API key is required to use opper CLI")
+	}
+
+	// If no key name specified, use default
+	if *keyName == "" {
+		*keyName = "default"
+	}
+
+	fmt.Printf("Enter your API key for '%s': ", *keyName)
+	apiKey, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("error reading API key: %w", err)
+	}
+	apiKey = strings.TrimSpace(apiKey)
+
+	// Create new config with API key
+	if cfg == nil {
+		cfg = &config.Config{
+			APIKeys: make(map[string]config.APIKeyConfig),
+		}
+	}
+	cfg.APIKeys[*keyName] = config.APIKeyConfig{
+		Key: apiKey,
+	}
+
+	// Save to config file
+	err = saveConfig(configPath, cfg)
+	if err != nil {
+		return "", fmt.Errorf("error saving config: %w", err)
+	}
+
+	fmt.Printf("API key saved to %s\n", configPath)
+	return apiKey, nil
+}
+
+func readConfig(path string) (*config.Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg config.Config
+	err = yaml.Unmarshal(data, &cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing config file: %w", err)
+	}
+
+	// Initialize the map if it's nil
+	if cfg.APIKeys == nil {
+		cfg.APIKeys = make(map[string]config.APIKeyConfig)
+	}
+
+	return &cfg, nil
+}
+
+func saveConfig(path string, cfg *config.Config) error {
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("error marshaling config: %w", err)
+	}
+
+	return os.WriteFile(path, data, 0600)
+}
 
 func main() {
 	// Add version flag handling
@@ -19,10 +135,10 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Read the API key from the environment variable
-	apiKey := os.Getenv("OPPER_API_KEY")
-	if apiKey == "" {
-		fmt.Println("Error: OPPER_API_KEY environment variable not set.")
+	// Get API key from environment or config file
+	apiKey, err := getAPIKey()
+	if err != nil {
+		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 

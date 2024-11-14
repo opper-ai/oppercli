@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type FunctionsClient struct {
@@ -115,6 +116,38 @@ func (c *FunctionsClient) GetByPath(ctx context.Context, functionPath string) (*
 	}
 
 	return &function, nil
+}
+
+func (c *FunctionsClient) Chat(ctx context.Context, functionPath string, message string) (string, error) {
+	functionPath = strings.Trim(functionPath, "/")
+
+	chatPayload := ChatPayload{
+		Messages: []Message{
+			{
+				Role:    "user",
+				Content: message,
+			},
+		},
+	}
+
+	chunks, err := c.client.Chat(ctx, functionPath, chatPayload, true)
+	if err != nil {
+		return "", err
+	}
+
+	for chunk := range chunks {
+		trimmedChunk := strings.TrimPrefix(string(chunk), "data: ")
+		var result map[string]interface{}
+		if err := json.Unmarshal([]byte(trimmedChunk), &result); err != nil {
+			continue
+		}
+		if delta, ok := result["delta"].(string); ok {
+			fmt.Print(delta)
+		}
+	}
+	fmt.Println()
+
+	return "", nil
 }
 
 // Add other function methods (Delete, List, Get, etc.)...

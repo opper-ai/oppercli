@@ -42,6 +42,12 @@ Commands:
     create <name> [instructions] Create a new function
     delete <name>              Delete a function
     get <name>                 Get function details
+    chat <name> [message]      Chat with a function
+      Message can be provided as arguments or via stdin:
+      Examples:
+        opper functions chat my/function "Hello, world!"
+        echo "Hello" | opper functions chat my/function
+        echo '{"data":"test"}' | opper functions chat my/function - format as JSON
 
   models:
     list [filter]              List custom language models
@@ -61,9 +67,6 @@ Commands:
     upload <name> <file_path>  Upload and index a file (PDF, CSV, TXT)
 
   help                         Show this help message
-
-Call functions:
-  opper <function-name> [message]  Chat with a function
 
 Examples:
   opper functions create my/function "Respond to questions. Be nice."
