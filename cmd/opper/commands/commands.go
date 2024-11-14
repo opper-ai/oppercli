@@ -54,6 +54,10 @@ Commands:
     add <name> <key> <content> Add content to an index
     upload <name> <file>       Upload and index a file
 
+  traces:
+    list [--live]              List all traces with optional live updates
+    get [--live] <trace-id>    Get details and spans of a trace with optional live updates
+
   call <name> <instructions>   Call a function
     Input: echo "input" | opper call <name> <instructions>
            opper call <name> <instructions> <input...>

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -272,6 +273,33 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 		return p.parseModelsCommand(args[2:])
 	case "indexes":
 		return p.parseIndexesCommand(args[2:])
+	case "traces":
+		if len(args) < 3 {
+			return nil, fmt.Errorf("traces command requires a subcommand (list, get)")
+		}
+
+		// Parse flags
+		flagSet := flag.NewFlagSet("traces", flag.ContinueOnError)
+		live := flagSet.Bool("live", false, "Watch for updates")
+		if err := flagSet.Parse(args[3:]); err != nil {
+			return nil, err
+		}
+
+		switch args[2] {
+		case "list":
+			return &ListTracesCommand{Live: *live}, nil
+		case "get":
+			remainingArgs := flagSet.Args()
+			if len(remainingArgs) < 1 {
+				return nil, fmt.Errorf("traces get requires a trace ID")
+			}
+			return &GetTraceCommand{
+				TraceID: remainingArgs[0],
+				Live:    *live,
+			}, nil
+		default:
+			return nil, fmt.Errorf("unknown traces subcommand: %s", args[2])
+		}
 	case "help":
 		return &HelpCommand{}, nil
 	case "call":
