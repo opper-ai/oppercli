@@ -290,15 +290,17 @@ func TestFunctionChat(t *testing.T) {
 		name       string
 		path       string
 		message    string
-		response   string
+		responses  []string
 		statusCode int
 		wantErr    bool
 	}{
 		{
-			name:       "successful chat",
-			path:       "test/function",
-			message:    "Hello",
-			response:   "Hi there!",
+			name:    "successful chat",
+			path:    "test/function",
+			message: "Hello",
+			responses: []string{
+				"Hi ", "there", "!",
+			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
 		},
@@ -317,7 +319,7 @@ func TestFunctionChat(t *testing.T) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/api/v1/functions/by_path/%s/chat", tt.path)
+				expectedPath := fmt.Sprintf("/v1/chat/%s", tt.path)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected path %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -328,34 +330,38 @@ func TestFunctionChat(t *testing.T) {
 				}
 
 				var requestBody struct {
-					Message string `json:"message"`
+					Messages []struct {
+						Role    string `json:"role"`
+						Content string `json:"content"`
+					} `json:"messages"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 					t.Errorf("failed to decode request body: %v", err)
 				}
-				if requestBody.Message != tt.message {
-					t.Errorf("expected message %q, got %q", tt.message, requestBody.Message)
+				if len(requestBody.Messages) != 1 || requestBody.Messages[0].Content != tt.message {
+					t.Errorf("expected message %q, got %q", tt.message, requestBody.Messages[0].Content)
 				}
 
+				w.Header().Set("Content-Type", "text/event-stream")
 				w.WriteHeader(tt.statusCode)
-				if tt.statusCode == http.StatusOK {
-					json.NewEncoder(w).Encode(map[string]string{
-						"response": tt.response,
-					})
+
+				for _, resp := range tt.responses {
+					chunk := map[string]string{
+						"delta": resp,
+					}
+					data, _ := json.Marshal(chunk)
+					fmt.Fprintf(w, "data: %s\n\n", data)
+					w.(http.Flusher).Flush()
 				}
 			}))
 			defer server.Close()
 
 			client := NewClient("test-key", server.URL)
-			response, err := client.Functions.Chat(context.Background(), tt.path, tt.message)
+			_, err := client.Functions.Chat(context.Background(), tt.path, tt.message)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Chat() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-
-			if !tt.wantErr && response != tt.response {
-				t.Errorf("expected response %q, got %q", tt.response, response)
 			}
 		})
 	}
