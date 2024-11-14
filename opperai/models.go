@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 type ModelsClient struct {
@@ -22,7 +23,13 @@ func (c *ModelsClient) List(ctx context.Context) ([]CustomLanguageModel, error) 
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, ErrUnauthorized
+	}
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, ErrRateLimit
+	}
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list models with status %s", resp.Status)
 	}
 
@@ -46,7 +53,7 @@ func (c *ModelsClient) Create(ctx context.Context, model CustomLanguageModel) er
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("failed to create model with status %s", resp.Status)
 	}
 
@@ -60,7 +67,7 @@ func (c *ModelsClient) Delete(ctx context.Context, name string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 && resp.StatusCode != 204 {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete model with status %s", resp.Status)
 	}
 
@@ -79,7 +86,7 @@ func (c *ModelsClient) Update(ctx context.Context, name string, model CustomLang
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to update model with status %s", resp.Status)
 	}
 
@@ -93,11 +100,11 @@ func (c *ModelsClient) Get(ctx context.Context, name string) (*CustomLanguageMod
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 404 {
-		return nil, nil
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("model not found: %s", name)
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get model with status %s", resp.Status)
 	}
 

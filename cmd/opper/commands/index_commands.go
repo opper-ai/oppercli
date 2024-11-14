@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -46,12 +47,10 @@ type UploadToIndexCommand struct {
 }
 
 func (c *ListIndexesCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	indexes, err := client.Indexes.List()
+	indexes, err := client.Indexes.List("")
 	if err != nil {
 		return err
 	}
-
-	// TODO: Apply filter if specified
 
 	for _, index := range indexes {
 		fmt.Println(index.Name)
@@ -165,5 +164,18 @@ func (c *UploadToIndexCommand) Execute(ctx context.Context, client *opperai.Clie
 	}
 
 	fmt.Printf("Uploaded file '%s' to index '%s'\n", c.FilePath, c.Name)
+	return nil
+}
+
+// Export the function for testing
+func ExecuteListIndexes(ctx context.Context, client *opperai.Client, w io.Writer, args []string) error {
+	indexes, err := client.Indexes.List("")
+	if err != nil {
+		return err
+	}
+
+	for _, index := range indexes {
+		fmt.Fprintln(w, index.Name)
+	}
 	return nil
 }

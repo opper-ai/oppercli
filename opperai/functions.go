@@ -101,7 +101,7 @@ func (c *FunctionsClient) GetByPath(ctx context.Context, functionPath string) (*
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil // Function not found
+		return nil, fmt.Errorf("function not found: %s", functionPath)
 	}
 
 	if resp.StatusCode != http.StatusOK {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 )
@@ -17,10 +18,20 @@ func newIndexesClient(client *Client) *IndexesClient {
 	return &IndexesClient{client: client}
 }
 
-func (c *IndexesClient) List() ([]Index, error) {
-	resp, err := c.client.DoRequest(context.Background(), "GET", "/v1/indexes", nil)
+func (c *IndexesClient) List(filter string) ([]Index, error) {
+	endpoint := "/v1/indexes"
+	if filter != "" {
+		endpoint = fmt.Sprintf("%s?filter=%s", endpoint, filter)
+	}
+
+	resp, err := c.client.DoRequest(context.Background(), "GET", endpoint, nil)
 	if err != nil {
 		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to list indexes with status %s", resp.Status)
 	}
 
 	var indexes []Index
@@ -45,6 +56,11 @@ func (c *IndexesClient) Create(name string) (*Index, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("failed to create index with status %s", resp.Status)
+	}
 
 	var index Index
 	if err := json.NewDecoder(resp.Body).Decode(&index); err != nil {
@@ -55,14 +71,36 @@ func (c *IndexesClient) Create(name string) (*Index, error) {
 }
 
 func (c *IndexesClient) Delete(name string) error {
-	_, err := c.client.DoRequest(context.Background(), "DELETE", fmt.Sprintf("/v1/indexes/by-name/%s", name), nil)
-	return err
+	resp, err := c.client.DoRequest(context.Background(), "DELETE", fmt.Sprintf("/v1/indexes/by-name/%s", name), nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("index not found: %s", name)
+	}
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("failed to delete index with status %s", resp.Status)
+	}
+
+	return nil
 }
 
 func (c *IndexesClient) Get(name string) (*Index, error) {
 	resp, err := c.client.DoRequest(context.Background(), "GET", fmt.Sprintf("/v1/indexes/by-name/%s", name), nil)
 	if err != nil {
 		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("index not found: %s", name)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get index with status %s", resp.Status)
 	}
 
 	var index Index
@@ -88,6 +126,15 @@ func (c *IndexesClient) Query(name string, query string, filters []Filter) ([]Re
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("index not found: %s", name)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to query index with status %s", resp.Status)
+	}
 
 	var results []RetrievalResponse
 	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
@@ -103,8 +150,21 @@ func (c *IndexesClient) Add(name string, doc Document) error {
 		return err
 	}
 
-	_, err = c.client.DoRequest(context.Background(), "POST", fmt.Sprintf("/v1/indexes/index/by-name/%s", name), bytes.NewReader(data))
-	return err
+	resp, err := c.client.DoRequest(context.Background(), "POST", fmt.Sprintf("/v1/indexes/index/by-name/%s", name), bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("index not found: %s", name)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to add document with status %s", resp.Status)
+	}
+
+	return nil
 }
 
 func (c *IndexesClient) UploadFile(name string, filePath string) error {
@@ -118,6 +178,11 @@ func (c *IndexesClient) UploadFile(name string, filePath string) error {
 	)
 	if err != nil {
 		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("index not found: %s", name)
 	}
 
 	var uploadData struct {
@@ -149,6 +214,15 @@ func (c *IndexesClient) UploadFile(name string, filePath string) error {
 		return err
 	}
 
-	_, err = c.client.DoRequest(context.Background(), "POST", fmt.Sprintf("/v1/indexes/register_file/by-name/%s", name), bytes.NewReader(registerData))
-	return err
+	resp, err = c.client.DoRequest(context.Background(), "POST", fmt.Sprintf("/v1/indexes/register_file/by-name/%s", name), bytes.NewReader(registerData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to register file with status %s", resp.Status)
+	}
+
+	return nil
 }
