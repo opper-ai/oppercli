@@ -274,6 +274,37 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 		return p.parseIndexesCommand(args[2:])
 	case "help":
 		return &HelpCommand{}, nil
+	case "call":
+		if len(args) < 4 {
+			return nil, fmt.Errorf("usage: call <name> <instructions>")
+		}
+
+		name := args[2]
+		instructions := args[3]
+		var input string
+
+		// Check if we have data on stdin
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			scanner := bufio.NewScanner(os.Stdin)
+			var inputLines []string
+			for scanner.Scan() {
+				inputLines = append(inputLines, scanner.Text())
+			}
+			if err := scanner.Err(); err != nil {
+				return nil, fmt.Errorf("error reading from stdin: %w", err)
+			}
+			input = strings.Join(inputLines, "\n")
+		} else if len(args) > 4 {
+			// If no stdin, use remaining args as input
+			input = strings.Join(args[4:], " ")
+		}
+
+		return &CallCommand{
+			Name:         name,
+			Instructions: instructions,
+			Input:        input,
+		}, nil
 	default:
 		// Maintain backwards compatibility by treating the first arg as a function name
 		return p.parseChatCommand(args[1:])
