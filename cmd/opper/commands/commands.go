@@ -36,26 +36,27 @@ Commands:
     delete <name>              Delete a function
     get <name>                 Get function details
     chat <name> [message]      Chat with a function
-      Message can be provided as arguments or via stdin
+      Input: echo "message" | opper functions chat <name>
+             opper functions chat <name> <message...>
 
   models:
     list [filter]              List custom language models
     create <name> <litellm-id> <key> [extra] Create a new model
-      extra: JSON string with additional options
     delete <name>              Delete a model
     get <name>                 Get model details
 
   indexes:
-    list [filter]              List indexes, optionally filtering by name
+    list [filter]              List indexes
     create <name>              Create a new index
     delete <name>              Delete an index
     get <name>                 Get index details
-    query <name> <query> [filter_json]  Query an index
-    add <name> <key> <content> [metadata_json]  Add content to an index
-    upload <name> <file_path>  Upload and index a file (PDF, CSV, TXT)
+    query <name> <query>       Query an index
+    add <name> <key> <content> Add content to an index
+    upload <name> <file>       Upload and index a file
 
-  call <name> <instructions>   Make a call to a function
-    Input can be provided as an argument or via stdin
+  call <name> <instructions>   Call a function
+    Input: echo "input" | opper call <name> <instructions>
+           opper call <name> <instructions> <input...>
 
   help                         Show this help message`
 }
