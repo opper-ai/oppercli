@@ -9,10 +9,19 @@ import (
 	"github.com/opper-ai/oppercli/opperai"
 )
 
-type ListTracesCommand struct{}
+type ListTracesCommand struct {
+	Live bool
+}
 
 func (c *ListTracesCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	traces, err := client.Traces.List(ctx)
+	if !c.Live {
+		return c.executeOnce(ctx, client)
+	}
+	return c.executeLive(ctx, client)
+}
+
+func (c *ListTracesCommand) executeOnce(ctx context.Context, client *opperai.Client) error {
+	traces, err := client.Traces.List(ctx, 0)
 	if err != nil {
 		return fmt.Errorf("error listing traces: %w", err)
 	}
@@ -22,8 +31,9 @@ func (c *ListTracesCommand) Execute(ctx context.Context, client *opperai.Client)
 		"UUID", "NAME", "STATUS", "SCORE", "DURATION", "PROJECT", "START TIME")
 	fmt.Printf("%s\n", strings.Repeat("─", 125))
 
-	for _, trace := range traces {
-		// Calculate average score if there are scores
+	// Print traces in reverse order
+	for i := len(traces) - 1; i >= 0; i-- {
+		trace := traces[i]
 		scoreStr := "N/A"
 		if len(trace.Scores) > 0 {
 			var totalScore float64
@@ -48,11 +58,108 @@ func (c *ListTracesCommand) Execute(ctx context.Context, client *opperai.Client)
 	return nil
 }
 
+func (c *ListTracesCommand) executeLive(ctx context.Context, client *opperai.Client) error {
+	// Create a new context without timeout for polling
+	pollCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle Ctrl+C
+	go func() {
+		<-ctx.Done()
+		cancel()
+	}()
+
+	// First, get initial traces and display them in reverse order
+	traces, err := client.Traces.List(ctx, 10)
+	if err != nil {
+		return fmt.Errorf("error listing traces: %w", err)
+	}
+
+	// Print header
+	fmt.Printf("\nSpans:\n")
+	fmt.Printf("%-36s  %-20s  %-10s  %-8s  %-15s  %-20s  %s\n",
+		"UUID", "NAME", "STATUS", "SCORE", "DURATION", "PROJECT", "START TIME")
+	fmt.Printf("%s\n", strings.Repeat("─", 125))
+
+	// Track seen traces
+	seenTraces := make(map[string]bool)
+
+	// Print initial traces in reverse order
+	for i := len(traces) - 1; i >= 0; i-- {
+		trace := traces[i]
+		seenTraces[trace.UUID] = true // Mark as seen
+
+		scoreStr := ""
+		if len(trace.Scores) > 0 {
+			var totalScore float64
+			for _, score := range trace.Scores {
+				totalScore += score.Score
+			}
+			avgScore := totalScore / float64(len(trace.Scores))
+			scoreStr = fmt.Sprintf("%.0f%%", avgScore)
+		}
+
+		fmt.Printf("%-36s  %-20s  %-10s  %-8s  %-15.2fms  %-20s  %s\n",
+			trace.UUID,
+			truncateString(trace.Name, 20),
+			trace.Status,
+			scoreStr,
+			trace.DurationMs,
+			truncateString(trace.Project.Name, 20),
+			trace.StartTime.Format(time.RFC3339),
+		)
+	}
+
+	// Start watching for updates
+	updates, err := client.Traces.WatchList(pollCtx, seenTraces) // Pass seenTraces to WatchList
+	if err != nil {
+		return err
+	}
+
+	// Handle new traces as they come in
+	for update := range updates {
+		if update.Error != nil {
+			fmt.Printf("Error: %v\n", update.Error)
+			continue
+		}
+
+		trace := update.Trace
+		scoreStr := ""
+		if len(trace.Scores) > 0 {
+			var totalScore float64
+			for _, score := range trace.Scores {
+				totalScore += score.Score
+			}
+			avgScore := totalScore / float64(len(trace.Scores))
+			scoreStr = fmt.Sprintf("%.0f%%", avgScore)
+		}
+
+		fmt.Printf("%-36s  %-20s  %-10s  %-8s  %-15.2fms  %-20s  %s\n",
+			trace.UUID,
+			truncateString(trace.Name, 20),
+			trace.Status,
+			scoreStr,
+			trace.DurationMs,
+			truncateString(trace.Project.Name, 20),
+			trace.StartTime.Format(time.RFC3339),
+		)
+	}
+	return nil
+}
+
 type GetTraceCommand struct {
 	TraceID string
+	Live    bool
 }
 
 func (c *GetTraceCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	if !c.Live {
+		return c.executeOnce(ctx, client)
+	}
+	return c.executeLive(ctx, client)
+}
+
+func (c *GetTraceCommand) executeOnce(ctx context.Context, client *opperai.Client) error {
 	trace, err := client.Traces.Get(ctx, c.TraceID)
 	if err != nil {
 		return fmt.Errorf("error getting trace: %w", err)
@@ -180,6 +287,39 @@ func (c *GetTraceCommand) Execute(ctx context.Context, client *opperai.Client) e
 				fmt.Println()
 			}
 			printSpan(span, 0)
+		}
+	}
+	return nil
+}
+
+func (c *GetTraceCommand) executeLive(ctx context.Context, client *opperai.Client) error {
+	// Create a new context without timeout for polling
+	pollCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle Ctrl+C
+	go func() {
+		<-ctx.Done()
+		cancel()
+	}()
+
+	updates, err := client.Traces.WatchTrace(pollCtx, c.TraceID)
+	if err != nil {
+		return err
+	}
+
+	for update := range updates {
+		if update.Error != nil {
+			fmt.Printf("Error: %v\n", update.Error)
+			continue
+		}
+
+		// Clear screen and move cursor to top
+		fmt.Print("\033[H\033[2J")
+
+		// Use the existing print logic by calling executeOnce with the updated trace
+		if err := c.executeOnce(pollCtx, client); err != nil {
+			fmt.Printf("Error: %v\n", err)
 		}
 	}
 	return nil
