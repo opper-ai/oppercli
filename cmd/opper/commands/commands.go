@@ -36,17 +36,12 @@ Commands:
     delete <name>              Delete a function
     get <name>                 Get function details
     chat <name> [message]      Chat with a function
-      Message can be provided as arguments or via stdin:
-      Examples:
-        opper functions chat my/function "Hello, world!"
-        echo "Hello" | opper functions chat my/function
-        echo '{"data":"test"}' | opper functions chat my/function - format as JSON
+      Message can be provided as arguments or via stdin
 
   models:
     list [filter]              List custom language models
     create <name> <litellm-id> <key> [extra] Create a new model
       extra: JSON string with additional options
-      Example: '{"api_base": "https://myoaiservice.azure.com", "api_version": "2024-06-01"}'
     delete <name>              Delete a model
     get <name>                 Get model details
 
@@ -59,10 +54,8 @@ Commands:
     add <name> <key> <content> [metadata_json]  Add content to an index
     upload <name> <file_path>  Upload and index a file (PDF, CSV, TXT)
 
-  help                         Show this help message
+  call <name> <instructions>   Make a call to a function
+    Input can be provided as an argument or via stdin
 
-Examples:
-  opper functions create my/function "Respond to questions. Be nice."
-  opper functions list my/
-  opper models create my-model my-id api-key '{"api_base": "https://myoaiservice.azure.com", "api_version": "2024-06-01"}'`
+  help                         Show this help message`
 }
