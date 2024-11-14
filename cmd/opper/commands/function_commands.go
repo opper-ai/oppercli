@@ -104,12 +104,10 @@ type FunctionChatCommand struct {
 }
 
 func (c *FunctionChatCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	response, err := client.Functions.Chat(ctx, c.FunctionPath, c.Message)
+	_, err := client.Functions.Chat(ctx, c.FunctionPath, c.Message)
 	if err != nil {
 		return fmt.Errorf("error chatting with function: %w", err)
 	}
-
-	fmt.Println(response)
 	return nil
 }
 
@@ -132,30 +130,25 @@ func ParseFunctionCommand(args []string) (Command, error) {
 		args = args[1:]
 
 		var message string
-
-		// Check if we should read from stdin
-		if len(args) > 0 && args[0] == "-" {
-			// Read from stdin
-			scanner := bufio.NewScanner(os.Stdin)
-			var input []string
-			for scanner.Scan() {
-				input = append(input, scanner.Text())
+		if len(args) == 0 {
+			// Check if there's input from stdin
+			stat, _ := os.Stdin.Stat()
+			if (stat.Mode() & os.ModeCharDevice) == 0 {
+				// Read from stdin
+				scanner := bufio.NewScanner(os.Stdin)
+				var input []string
+				for scanner.Scan() {
+					input = append(input, scanner.Text())
+				}
+				if err := scanner.Err(); err != nil {
+					return nil, fmt.Errorf("error reading from stdin: %w", err)
+				}
+				message = strings.Join(input, "\n")
+			} else {
+				return nil, fmt.Errorf("message required (either as arguments or via stdin)")
 			}
-			if err := scanner.Err(); err != nil {
-				return nil, fmt.Errorf("error reading from stdin: %w", err)
-			}
-
-			// If there are additional args after "-", append them
-			if len(args) > 1 {
-				input = append(input, args[1:]...)
-			}
-
-			message = strings.Join(input, " ")
-		} else if len(args) > 0 {
-			// Use args directly as message
-			message = strings.Join(args, " ")
 		} else {
-			return nil, fmt.Errorf("message required (either as arguments or via stdin)")
+			message = strings.Join(args, " ")
 		}
 
 		return &FunctionChatCommand{

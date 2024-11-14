@@ -284,3 +284,79 @@ func TestDeleteFunction(t *testing.T) {
 		})
 	}
 }
+
+func TestFunctionChat(t *testing.T) {
+	tests := []struct {
+		name       string
+		path       string
+		message    string
+		response   string
+		statusCode int
+		wantErr    bool
+	}{
+		{
+			name:       "successful chat",
+			path:       "test/function",
+			message:    "Hello",
+			response:   "Hi there!",
+			statusCode: http.StatusOK,
+			wantErr:    false,
+		},
+		{
+			name:       "function not found",
+			path:       "nonexistent/function",
+			message:    "Hello",
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					t.Errorf("expected POST request, got %s", r.Method)
+				}
+				expectedPath := fmt.Sprintf("/api/v1/functions/by_path/%s/chat", tt.path)
+				if r.URL.Path != expectedPath {
+					t.Errorf("expected path %s, got %s", expectedPath, r.URL.Path)
+				}
+
+				if tt.statusCode == http.StatusNotFound {
+					w.WriteHeader(tt.statusCode)
+					return
+				}
+
+				var requestBody struct {
+					Message string `json:"message"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+					t.Errorf("failed to decode request body: %v", err)
+				}
+				if requestBody.Message != tt.message {
+					t.Errorf("expected message %q, got %q", tt.message, requestBody.Message)
+				}
+
+				w.WriteHeader(tt.statusCode)
+				if tt.statusCode == http.StatusOK {
+					json.NewEncoder(w).Encode(map[string]string{
+						"response": tt.response,
+					})
+				}
+			}))
+			defer server.Close()
+
+			client := NewClient("test-key", server.URL)
+			response, err := client.Functions.Chat(context.Background(), tt.path, tt.message)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Chat() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && response != tt.response {
+				t.Errorf("expected response %q, got %q", tt.response, response)
+			}
+		})
+	}
+}

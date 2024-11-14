@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type FunctionsClient struct {
@@ -118,37 +119,35 @@ func (c *FunctionsClient) GetByPath(ctx context.Context, functionPath string) (*
 }
 
 func (c *FunctionsClient) Chat(ctx context.Context, functionPath string, message string) (string, error) {
-	endpoint := fmt.Sprintf("/api/v1/functions/by_path/%s/chat", functionPath)
+	functionPath = strings.Trim(functionPath, "/")
 
-	data := struct {
-		Message string `json:"message"`
-	}{
-		Message: message,
+	chatPayload := ChatPayload{
+		Messages: []Message{
+			{
+				Role:    "user",
+				Content: message,
+			},
+		},
 	}
 
-	jsonData, err := json.Marshal(data)
+	chunks, err := c.client.Chat(ctx, functionPath, chatPayload, true)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := c.client.DoRequest(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", err
+	for chunk := range chunks {
+		trimmedChunk := strings.TrimPrefix(string(chunk), "data: ")
+		var result map[string]interface{}
+		if err := json.Unmarshal([]byte(trimmedChunk), &result); err != nil {
+			continue
+		}
+		if delta, ok := result["delta"].(string); ok {
+			fmt.Print(delta)
+		}
 	}
-	defer resp.Body.Close()
+	fmt.Println()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("chat failed with status %s", resp.Status)
-	}
-
-	var response struct {
-		Response string `json:"response"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return "", err
-	}
-
-	return response.Response, nil
+	return "", nil
 }
 
 // Add other function methods (Delete, List, Get, etc.)...

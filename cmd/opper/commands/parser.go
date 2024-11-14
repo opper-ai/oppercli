@@ -1,7 +1,10 @@
 package commands
 
 import (
+	"bufio"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 )
 
@@ -11,42 +14,22 @@ func NewCommandParser() *CommandParser {
 	return &CommandParser{}
 }
 
-func (p *CommandParser) Parse(args []string) (Command, error) {
-	if len(args) < 2 {
-		return &HelpCommand{}, nil
-	}
-
-	// First argument after program name is the module
-	switch args[1] {
-	case "functions":
-		return p.parseFunctionsCommand(args[2:])
-	case "models":
-		return p.parseModelsCommand(args[2:])
-	case "indexes":
-		return p.parseIndexesCommand(args[2:])
-	case "help":
-		return &HelpCommand{}, nil
-	default:
-		// Maintain backwards compatibility by treating the first arg as a function name
-		return p.parseChatCommand(args[1:])
-	}
-}
-
 func (p *CommandParser) parseFunctionsCommand(args []string) (Command, error) {
 	if len(args) < 1 {
-		return nil, fmt.Errorf("functions subcommand required (list, create, delete, get)")
+		return nil, fmt.Errorf("functions subcommand required (list, create, delete, get, chat)")
 	}
 
 	switch args[0] {
 	case "list":
-		filter := ""
+		var filter string
 		if len(args) > 1 {
 			filter = args[1]
 		}
 		return &ListCommand{Filter: filter}, nil
+
 	case "create":
 		if len(args) < 2 {
-			return nil, fmt.Errorf("usage: functions create <name> [instructions]")
+			return nil, fmt.Errorf("function name and instructions required")
 		}
 		return &CreateCommand{
 			BaseCommand: BaseCommand{
@@ -54,24 +37,78 @@ func (p *CommandParser) parseFunctionsCommand(args []string) (Command, error) {
 			},
 			Instructions: strings.Join(args[2:], " "),
 		}, nil
+
 	case "delete":
 		if len(args) < 2 {
-			return nil, fmt.Errorf("usage: functions delete <name>")
+			return nil, fmt.Errorf("function name required")
 		}
 		return &DeleteCommand{
 			BaseCommand: BaseCommand{
 				FunctionPath: args[1],
 			},
 		}, nil
+
 	case "get":
 		if len(args) < 2 {
-			return nil, fmt.Errorf("usage: functions get <name>")
+			return nil, fmt.Errorf("function name required")
 		}
 		return &GetCommand{
 			BaseCommand: BaseCommand{
 				FunctionPath: args[1],
 			},
 		}, nil
+
+	case "chat":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: functions chat <name> [message]")
+		}
+		functionPath := args[1]
+		args = args[2:] // Remove the function path from args
+
+		var message string
+		if len(args) > 0 && args[0] == "-" {
+			// Read from stdin
+			stdinData, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				return nil, fmt.Errorf("error reading from stdin: %w", err)
+			}
+
+			// If there are additional args after "-", append them
+			if len(args) > 1 {
+				message = fmt.Sprintf("%s %s", string(stdinData), strings.Join(args[1:], " "))
+			} else {
+				message = string(stdinData)
+			}
+		} else if len(args) > 0 {
+			// Use args directly as message
+			message = strings.Join(args, " ")
+		} else {
+			// No args, try reading from stdin
+			stat, _ := os.Stdin.Stat()
+			if (stat.Mode() & os.ModeCharDevice) == 0 {
+				scanner := bufio.NewScanner(os.Stdin)
+				var input []string
+				for scanner.Scan() {
+					input = append(input, scanner.Text())
+				}
+				if err := scanner.Err(); err != nil {
+					return nil, fmt.Errorf("error reading from stdin: %w", err)
+				}
+				message = strings.Join(input, "\n")
+			}
+		}
+
+		if message == "" {
+			return nil, fmt.Errorf("message required (either as arguments or via stdin)")
+		}
+
+		return &FunctionChatCommand{
+			BaseCommand: BaseCommand{
+				FunctionPath: functionPath,
+			},
+			Message: message,
+		}, nil
+
 	default:
 		return nil, fmt.Errorf("unknown functions subcommand: %s", args[0])
 	}
@@ -91,16 +128,12 @@ func (p *CommandParser) parseModelsCommand(args []string) (Command, error) {
 		return &ListModelsCommand{Filter: filter}, nil
 	case "create":
 		if len(args) < 4 {
-			return nil, fmt.Errorf("usage: models create <name> <litellm identifier> <api_key> [extra_json]\n" +
-				"Example extra_json: '{\"api_base\": \"https://myoaiservice.azure.com\", \"api_version\": \"2024-06-01\"}'")
+			return nil, fmt.Errorf("usage: models create <name> <litellm identifier> <api_key> [extra_json]")
 		}
-
-		// Join all remaining arguments as they might be part of the JSON
 		extra := "{}"
 		if len(args) > 4 {
 			extra = strings.Join(args[4:], " ")
 		}
-
 		return &CreateModelCommand{
 			Name:       args[1],
 			Identifier: args[2],
@@ -120,27 +153,6 @@ func (p *CommandParser) parseModelsCommand(args []string) (Command, error) {
 	default:
 		return nil, fmt.Errorf("unknown models subcommand: %s", args[0])
 	}
-}
-
-// Keep the existing parseChatCommand for backwards compatibility
-func (p *CommandParser) parseChatCommand(args []string) (Command, error) {
-	if len(args) < 1 {
-		return nil, fmt.Errorf("function name required for chat")
-	}
-
-	messageContent := ""
-	if len(args) > 1 {
-		messageContent = strings.Join(args[1:], " ")
-	}
-
-	cmd := &ChatCommand{
-		BaseCommand: BaseCommand{
-			FunctionPath: args[0],
-		},
-		MessageContent: messageContent,
-	}
-
-	return cmd, nil
 }
 
 func (p *CommandParser) parseIndexesCommand(args []string) (Command, error) {
@@ -207,5 +219,63 @@ func (p *CommandParser) parseIndexesCommand(args []string) (Command, error) {
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown indexes subcommand: %s", args[0])
+	}
+}
+
+func (p *CommandParser) parseChatCommand(args []string) (Command, error) {
+	if len(args) < 1 {
+		return nil, fmt.Errorf("function name required")
+	}
+
+	functionPath := args[0]
+	message := ""
+	if len(args) > 1 {
+		message = strings.Join(args[1:], " ")
+	} else {
+		// Check if there's input from stdin
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			scanner := bufio.NewScanner(os.Stdin)
+			var input []string
+			for scanner.Scan() {
+				input = append(input, scanner.Text())
+			}
+			if err := scanner.Err(); err != nil {
+				return nil, fmt.Errorf("error reading from stdin: %w", err)
+			}
+			message = strings.Join(input, "\n")
+		}
+	}
+
+	if message == "" {
+		return nil, fmt.Errorf("message required (either as arguments or via stdin)")
+	}
+
+	return &FunctionChatCommand{
+		BaseCommand: BaseCommand{
+			FunctionPath: functionPath,
+		},
+		Message: message,
+	}, nil
+}
+
+func (p *CommandParser) Parse(args []string) (Command, error) {
+	if len(args) < 2 {
+		return &HelpCommand{}, nil
+	}
+
+	// First argument after program name is the module
+	switch args[1] {
+	case "functions":
+		return p.parseFunctionsCommand(args[2:])
+	case "models":
+		return p.parseModelsCommand(args[2:])
+	case "indexes":
+		return p.parseIndexesCommand(args[2:])
+	case "help":
+		return &HelpCommand{}, nil
+	default:
+		// Maintain backwards compatibility by treating the first arg as a function name
+		return p.parseChatCommand(args[1:])
 	}
 }

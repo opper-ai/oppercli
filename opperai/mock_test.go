@@ -9,6 +9,7 @@ import (
 type MockClient struct {
 	ListModelsFunc  func(context.Context) ([]CustomLanguageModel, error)
 	CreateModelFunc func(context.Context, CustomLanguageModel) error
+	ChatFunc        func(context.Context, string, string) (string, error)
 	// Add other methods
 }
 
@@ -17,6 +18,14 @@ func (m *MockClient) ListModels(ctx context.Context) ([]CustomLanguageModel, err
 		return m.ListModelsFunc(ctx)
 	}
 	return nil, nil
+}
+
+// Add the Chat method to the mock
+func (m *MockClient) Chat(ctx context.Context, functionName string, message string) (string, error) {
+	if m.ChatFunc != nil {
+		return m.ChatFunc(ctx, functionName, message)
+	}
+	return "", nil
 }
 
 // Example test using mock
