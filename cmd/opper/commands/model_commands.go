@@ -15,7 +15,7 @@ type ListModelsCommand struct {
 }
 
 func (c *ListModelsCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	models, err := client.ListCustomLanguageModels(ctx)
+	models, err := client.Models.List(ctx)
 	if err != nil {
 		return fmt.Errorf("error listing models: %w", err)
 	}
@@ -74,7 +74,7 @@ func (c *CreateModelCommand) Execute(ctx context.Context, client *opperai.Client
 		Extra:      extra,
 	}
 
-	if err := client.CreateCustomLanguageModel(ctx, model); err != nil {
+	if err := client.Models.Create(ctx, model); err != nil {
 		return fmt.Errorf("error creating model: %w", err)
 	}
 
@@ -88,7 +88,7 @@ type DeleteModelCommand struct {
 }
 
 func (c *DeleteModelCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	if err := client.DeleteCustomLanguageModel(ctx, c.Name); err != nil {
+	if err := client.Models.Delete(ctx, c.Name); err != nil {
 		return fmt.Errorf("error deleting model: %w", err)
 	}
 
@@ -102,7 +102,7 @@ type GetModelCommand struct {
 }
 
 func (c *GetModelCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	model, err := client.GetCustomLanguageModel(ctx, c.Name)
+	model, err := client.Models.Get(ctx, c.Name)
 	if err != nil {
 		return fmt.Errorf("error getting model: %w", err)
 	}

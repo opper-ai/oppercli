@@ -1,7 +1,7 @@
 VERSION ?= 0.1.0
 LDFLAGS := -X main.Version=$(VERSION)
 
-.PHONY: build install clean release
+.PHONY: build install clean release test test-race test-cover test-all
 
 # Build the project
 build:
@@ -26,3 +26,21 @@ release: clean
 		sha256sum opper-darwin-arm64 > opper-darwin-arm64.sha256 && \
 		sha256sum opper-darwin-amd64 > opper-darwin-amd64.sha256 && \
 		sha256sum opper-linux-amd64 > opper-linux-amd64.sha256
+
+# Add these to your existing Makefile
+
+.PHONY: test
+test:
+	go test -v ./...
+
+.PHONY: test-race
+test-race:
+	go test -race -v ./...
+
+.PHONY: test-cover
+test-cover:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+
+.PHONY: test-all
+test-all: test test-race test-cover
