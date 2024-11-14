@@ -68,9 +68,6 @@ Commands:
 
   help                         Show this help message
 
-Call functions:
-  opper <function-name> [message]  Chat with a function
-
 Examples:
   opper functions create my/function "Respond to questions. Be nice."
   opper functions list my/
