@@ -18,6 +18,10 @@ type CallCommand struct {
 }
 
 func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	if c.Input == "" {
+		return fmt.Errorf("no input provided")
+	}
+
 	if client == nil {
 		// Initialize client using environment variable
 		apiKey := os.Getenv("OPPER_API_KEY")

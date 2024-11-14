@@ -54,11 +54,18 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 				var chunk struct {
 					Delta string `json:"delta"`
 				}
-				if err := decoder.Decode(&chunk); err != nil {
+				line, err := decoder.Token()
+				if err != nil {
 					// Handle error
 					return
 				}
-				streamChan <- chunk.Delta
+				if str, ok := line.(string); ok && str == "data" {
+					if err := decoder.Decode(&chunk); err != nil {
+						// Handle error
+						return
+					}
+					streamChan <- chunk.Delta
+				}
 			}
 		}()
 		return &CallResponse{Stream: streamChan}, nil
