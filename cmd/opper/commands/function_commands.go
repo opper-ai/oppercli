@@ -14,7 +14,7 @@ type DeleteCommand struct {
 }
 
 func (c *DeleteCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	err := client.DeleteFunction(ctx, "", c.FunctionPath)
+	err := client.Functions.Delete(ctx, "", c.FunctionPath)
 	if err != nil {
 		return fmt.Errorf("error deleting function: %w", err)
 	}
@@ -29,7 +29,7 @@ type ListCommand struct {
 }
 
 func (c *ListCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	functions, err := client.ListFunctions(ctx)
+	functions, err := client.Functions.List(ctx)
 	if err != nil {
 		return fmt.Errorf("error listing functions: %w", err)
 	}
@@ -64,7 +64,7 @@ type GetCommand struct {
 }
 
 func (c *GetCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	function, err := client.GetFunctionByPath(ctx, c.FunctionPath)
+	function, err := client.Functions.GetByPath(ctx, c.FunctionPath)
 	if err != nil {
 		return fmt.Errorf("error retrieving function: %w", err)
 	}
@@ -84,7 +84,7 @@ type CreateCommand struct {
 }
 
 func (c *CreateCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	createdFunction, err := client.CreateFunction(ctx, &opperai.Function{
+	createdFunction, err := client.Functions.Create(ctx, &opperai.Function{
 		Path:         c.FunctionPath,
 		Instructions: c.Instructions,
 	})
