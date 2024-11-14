@@ -58,5 +58,9 @@ Commands:
     Input: echo "input" | opper call <name> <instructions>
            opper call <name> <instructions> <input...>
 
+  traces:
+    list                       List all traces
+    get <trace-id>            Get details of a specific trace
+
   help                         Show this help message`
 }

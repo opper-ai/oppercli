@@ -101,3 +101,61 @@ type Filter struct {
 	Operation string      `json:"operation"`
 	Value     interface{} `json:"value"`
 }
+
+type Score struct {
+	UUID  string  `json:"uuid"`
+	Score float64 `json:"score"`
+}
+
+type SpanMetric struct {
+	SpanUUID string                 `json:"span_uuid"`
+	Metrics  map[string]interface{} `json:"metrics"`
+}
+
+type Trace struct {
+	UUID        string       `json:"uuid"`
+	OrgID       int          `json:"org_id"`
+	Rating      *int         `json:"rating"`
+	Spans       []Span       `json:"spans"`
+	Scores      []Score      `json:"scores"`
+	StartTime   time.Time    `json:"start_time"`
+	EndTime     time.Time    `json:"end_time"`
+	DurationMs  float64      `json:"duration_ms"`
+	Status      string       `json:"status"`
+	Name        string       `json:"name"`
+	Input       string       `json:"input"`
+	Output      *string      `json:"output"`
+	TotalTokens int          `json:"total_tokens"`
+	Project     Project      `json:"project"`
+	SpanMetrics []SpanMetric `json:"span_metrics"`
+}
+
+type Project struct {
+	UUID string `json:"uuid"`
+	Name string `json:"name"`
+}
+
+type TraceListResponse struct {
+	Traces []Trace `json:"traces"`
+	Cursor string  `json:"cursor"`
+}
+
+type Span struct {
+	UUID           string                 `json:"uuid"`
+	Project        interface{}            `json:"project"`
+	ProjectUUID    *string                `json:"project_uuid"`
+	Name           string                 `json:"name"`
+	Input          *string                `json:"input"`
+	Output         *string                `json:"output"`
+	StartTime      time.Time              `json:"start_time"`
+	Type           *string                `json:"type"`
+	ParentUUID     *string                `json:"parent_uuid"`
+	EndTime        time.Time              `json:"end_time"`
+	DurationMs     float64                `json:"duration_ms"`
+	Error          *string                `json:"error"`
+	Meta           map[string]interface{} `json:"meta"`
+	Evaluations    interface{}            `json:"evaluations"`
+	Score          *float64               `json:"score"`
+	TotalTokens    *int                   `json:"total_tokens"`
+	DatasetEntries []interface{}          `json:"dataset_entries"`
+}

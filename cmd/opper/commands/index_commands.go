@@ -106,14 +106,6 @@ func (c *GetIndexCommand) Execute(ctx context.Context, client *opperai.Client) e
 	return nil
 }
 
-// Helper function to truncate long strings
-func truncateString(str string, length int) string {
-	if len(str) <= length {
-		return str
-	}
-	return str[:length-3] + "..."
-}
-
 func (c *QueryIndexCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	var filter map[string]interface{}
 	if err := json.Unmarshal([]byte(c.Filter), &filter); err != nil {

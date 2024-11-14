@@ -272,6 +272,21 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 		return p.parseModelsCommand(args[2:])
 	case "indexes":
 		return p.parseIndexesCommand(args[2:])
+	case "traces":
+		if len(args) < 3 {
+			return nil, fmt.Errorf("traces command requires a subcommand (list, get)")
+		}
+		switch args[2] {
+		case "list":
+			return &ListTracesCommand{}, nil
+		case "get":
+			if len(args) < 4 {
+				return nil, fmt.Errorf("traces get requires a trace ID")
+			}
+			return &GetTraceCommand{TraceID: args[3]}, nil
+		default:
+			return nil, fmt.Errorf("unknown traces subcommand: %s", args[2])
+		}
 	case "help":
 		return &HelpCommand{}, nil
 	case "call":
