@@ -274,6 +274,16 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 		return p.parseIndexesCommand(args[2:])
 	case "help":
 		return &HelpCommand{}, nil
+	case "call":
+		// Add call command parsing
+		if len(args) < 4 {
+			return nil, fmt.Errorf("usage: call <name> <instructions> <input>")
+		}
+		return &CallCommand{
+			Name:         args[2],
+			Instructions: args[3],
+			Input:        strings.Join(args[4:], " "),
+		}, nil
 	default:
 		// Maintain backwards compatibility by treating the first arg as a function name
 		return p.parseChatCommand(args[1:])

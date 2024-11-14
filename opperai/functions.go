@@ -149,5 +149,3 @@ func (c *FunctionsClient) Chat(ctx context.Context, functionPath string, message
 
 	return "", nil
 }
-
-// Add other function methods (Delete, List, Get, etc.)...
