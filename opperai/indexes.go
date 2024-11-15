@@ -52,13 +52,13 @@ func (c *IndexesClient) Create(name string) (*Index, error) {
 		return nil, err
 	}
 
-	resp, err := c.client.DoRequest(context.Background(), "POST", "/v1/indexes/by-name", bytes.NewReader(data))
+	resp, err := c.client.DoRequest(context.Background(), "POST", "/v1/indexes", bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("failed to create index with status %s", resp.Status)
 	}
 
@@ -81,7 +81,7 @@ func (c *IndexesClient) Delete(name string) error {
 		return fmt.Errorf("index not found: %s", name)
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete index with status %s", resp.Status)
 	}
 

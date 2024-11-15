@@ -108,13 +108,13 @@ func TestCreateIndex(t *testing.T) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("%s", indexesByName)
+				expectedPath := indexesBasePath
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected path %s, got %s", expectedPath, r.URL.Path)
 				}
 
 				w.WriteHeader(tt.statusCode)
-				if tt.statusCode == http.StatusCreated {
+				if tt.statusCode == http.StatusCreated || tt.statusCode == http.StatusOK {
 					json.NewEncoder(w).Encode(tt.response)
 				}
 			}))
