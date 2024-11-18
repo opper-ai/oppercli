@@ -23,14 +23,14 @@ func TestIntegration(t *testing.T) {
 	// Create a test server instead of using real API for integration tests
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/v1/indexes/by-name":
+		case "/v1/indexes":
 			if r.Method == http.MethodPost {
-				w.WriteHeader(http.StatusCreated)
+				w.WriteHeader(http.StatusOK)
 				json.NewEncoder(w).Encode(opperai.Index{Name: "test-index"})
 			}
 		case "/v1/indexes/by-name/test-index":
 			if r.Method == http.MethodDelete {
-				w.WriteHeader(http.StatusNoContent)
+				w.WriteHeader(http.StatusOK)
 			}
 		case "/v1/indexes/index/by-name/test-index":
 			if r.Method == http.MethodPost {

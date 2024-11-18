@@ -30,20 +30,9 @@ func GetHelpText() string {
   opper <command> <subcommand> [arguments]
 
 Commands:
-  functions:
-    list [filter]              List functions, optionally filtering by name
-    create <name> [instructions] Create a new function
-    delete <name>              Delete a function
-    get <name>                 Get function details
-    chat <name> [message]      Chat with a function
-      Input: echo "message" | opper functions chat <name>
-             opper functions chat <name> <message...>
-
-  models:
-    list [filter]              List custom language models
-    create <name> <litellm-id> <key> [extra] Create a new model
-    delete <name>              Delete a model
-    get <name>                 Get model details
+  call <name> <instructions>   Call a function
+    Input: echo "input" | opper call <name> <instructions>
+           opper call <name> <instructions> <input...>
 
   indexes:
     list [filter]              List indexes
@@ -55,12 +44,24 @@ Commands:
     upload <name> <file>       Upload and index a file
 
   traces:
-    list [--live]              List all traces with optional live updates
-    get [--live] <trace-id>    Get details and spans of a trace with optional live updates
+    list                       List all traces
+    get <trace-id>             Get details and spans of a trace
 
-  call <name> <instructions>   Call a function
-    Input: echo "input" | opper call <name> <instructions>
-           opper call <name> <instructions> <input...>
+      
+  models:
+    list [filter]              List custom language models
+    create <name> <litellm-id> <key> [extra] Create a new model
+    delete <name>              Delete a model
+    get <name>                 Get model details
+
+  functions:
+    list [filter]              List functions, optionally filtering by name
+    create <name> [instructions] Create a new function
+    delete <name>              Delete a function
+    get <name>                 Get function details
+    chat <name> [message]      Chat with a function
+      Input: echo "message" | opper functions chat <name>
+             opper functions chat <name> <message...>
 
   help                         Show this help message`
 }
