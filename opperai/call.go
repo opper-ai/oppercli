@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 )
 
 type CallClient struct {
@@ -43,12 +46,19 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+
+	// Handle non-200 status codes first
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, fmt.Errorf("%s", string(body))
+	}
 
 	if stream {
 		streamChan := make(chan string)
 		go func() {
 			defer close(streamChan)
+			defer resp.Body.Close()
 			decoder := json.NewDecoder(resp.Body)
 			for decoder.More() {
 				var chunk struct {
@@ -71,11 +81,18 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 		return &CallResponse{Stream: streamChan}, nil
 	}
 
+	// For non-streaming responses
+	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("error reading response: %w", err)
+	}
+
 	var result struct {
 		Message string `json:"message"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("error parsing response: %w", err)
 	}
 
 	return &CallResponse{Message: result.Message}, nil

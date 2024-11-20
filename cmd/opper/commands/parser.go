@@ -117,7 +117,7 @@ func (p *CommandParser) parseFunctionsCommand(args []string) (Command, error) {
 
 func (p *CommandParser) parseModelsCommand(args []string) (Command, error) {
 	if len(args) < 1 {
-		return nil, fmt.Errorf("models subcommand required (list, create, delete, get)")
+		return nil, fmt.Errorf("models subcommand required (list, create, delete, get, test)")
 	}
 
 	switch args[0] {
@@ -151,6 +151,11 @@ func (p *CommandParser) parseModelsCommand(args []string) (Command, error) {
 			return nil, fmt.Errorf("usage: models get <name>")
 		}
 		return &GetModelCommand{Name: args[1]}, nil
+	case "test":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: models test <name>")
+		}
+		return &TestModelCommand{Name: args[1]}, nil
 	default:
 		return nil, fmt.Errorf("unknown models subcommand: %s", args[0])
 	}
@@ -304,7 +309,7 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 		return &HelpCommand{}, nil
 	case "call":
 		if len(args) < 4 {
-			return nil, fmt.Errorf("usage: call <name> <instructions>")
+			return nil, fmt.Errorf("usage: call <name> <instructions> <input>\n  Example: opper call <name> \"respond in kind\" \"what is 2+2?\"")
 		}
 
 		name := args[2]
@@ -326,6 +331,8 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 		} else if len(args) > 4 {
 			// If no stdin, use remaining args as input
 			input = strings.Join(args[4:], " ")
+		} else {
+			return nil, fmt.Errorf("input required (either as argument or via stdin)")
 		}
 
 		return &CallCommand{

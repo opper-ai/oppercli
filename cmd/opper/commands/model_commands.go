@@ -1,9 +1,11 @@
 package commands
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/opper-ai/oppercli/opperai"
@@ -79,6 +81,8 @@ func (c *CreateModelCommand) Execute(ctx context.Context, client *opperai.Client
 	}
 
 	fmt.Printf("Successfully created model: %s\n", c.Name)
+	fmt.Printf("To test your model, run: opper models test %s\n", c.Name)
+
 	return nil
 }
 
@@ -122,6 +126,45 @@ func (c *GetModelCommand) Execute(ctx context.Context, client *opperai.Client) e
 		if err == nil {
 			fmt.Printf("Extra:\n%s\n", string(extraJSON))
 		}
+	}
+
+	return nil
+}
+
+// TestModelCommand handles testing custom language models
+type TestModelCommand struct {
+	Name string
+}
+
+func (c *TestModelCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	// First verify the model exists
+	model, err := client.Models.Get(ctx, c.Name)
+	if err != nil {
+		return fmt.Errorf("error getting model: %w", err)
+	}
+
+	fmt.Printf("Testing model %s (%s)...\n", c.Name, model.Identifier)
+	fmt.Print("Enter your test message (press Enter to send): ")
+
+	reader := bufio.NewReader(os.Stdin)
+	message, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("error reading input: %w", err)
+	}
+	message = strings.TrimSpace(message)
+
+	// Create a call command to test the model
+	callCmd := &CallCommand{
+		Name:         "opper/cli/model-test",
+		Instructions: "Test the model by responding to the user's message",
+		Input:        message,
+		Options: &CallOptions{
+			Model: c.Name,
+		},
+	}
+
+	if err := callCmd.Execute(ctx, client); err != nil {
+		return fmt.Errorf("model test failed: %w", err)
 	}
 
 	return nil
