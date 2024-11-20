@@ -1,22 +1,22 @@
 class Opper < Formula
   desc "Command line interface for Opper AI"
   homepage "https://github.com/opper-ai/oppercli"
-  version "0.5.1"
+  version "0.6.0"
 
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-darwin-arm64"
-      sha256 "ae639e94e0f0b0fa5354ca169635c882ca5596c8aa7a2d20470b16ceaa1c1397"
+      sha256 "98d36767baf17d9336e58363f8bc3134e0fb9b3a0a6fac4e1940150a22183c71"
     else
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-darwin-amd64"
-      sha256 "a745a8394ab8f73008f2d4d9f5139ca3c9381c5caf8568b899ccbc31f1b46b00"
+      sha256 "e205259ac3f492a756b74e4dba67e91ba6375ee5551d4a55ac698f2e3ec9696c"
     end
   end
 
   on_linux do
     if Hardware::CPU.intel?
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-linux-amd64"
-      sha256 "ae237721345adad4b03f7f688f735cce4805bfde08eb8c651a2d95f4e20c2668"
+      sha256 "3634677dfe23978f8f98545e949602818ca8fd0f8e40d4efcfd109cf528e9fcd"
     end
   end
 
