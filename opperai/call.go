@@ -1,12 +1,14 @@
 package opperai
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 type CallClient struct {
@@ -59,21 +61,34 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 		go func() {
 			defer close(streamChan)
 			defer resp.Body.Close()
-			decoder := json.NewDecoder(resp.Body)
-			for decoder.More() {
+
+			reader := bufio.NewReader(resp.Body)
+			for {
+				line, err := reader.ReadBytes('\n')
+				if err != nil {
+					if err != io.EOF {
+						fmt.Fprintf(os.Stderr, "Error reading stream: %v\n", err)
+					}
+					return
+				}
+
+				// Skip empty lines
+				if len(line) == 0 {
+					continue
+				}
+
+				// Remove "data: " prefix if present
+				data := bytes.TrimPrefix(line, []byte("data: "))
+
+				// Try to parse the JSON
 				var chunk struct {
 					Delta string `json:"delta"`
 				}
-				line, err := decoder.Token()
-				if err != nil {
-					// Handle error
-					return
+				if err := json.Unmarshal(data, &chunk); err != nil {
+					continue // Skip malformed JSON
 				}
-				if str, ok := line.(string); ok && str == "data" {
-					if err := decoder.Decode(&chunk); err != nil {
-						// Handle error
-						return
-					}
+
+				if chunk.Delta != "" {
 					streamChan <- chunk.Delta
 				}
 			}
