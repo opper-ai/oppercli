@@ -3,13 +3,11 @@ package commands
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/opper-ai/oppercli/opperai"
 )
 
 type CallCommand struct {
-	BaseCommand
 	Name         string
 	Instructions string
 	Input        string
@@ -18,36 +16,32 @@ type CallCommand struct {
 }
 
 func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	// Validate required fields
+	if c.Name == "" {
+		return fmt.Errorf("name is required")
+	}
+	if c.Instructions == "" {
+		return fmt.Errorf("instructions are required")
+	}
 	if c.Input == "" {
-		return fmt.Errorf("no input provided")
+		return fmt.Errorf("input is required")
 	}
 
-	if client == nil {
-		// Initialize client using environment variable
-		apiKey := os.Getenv("OPPER_API_KEY")
-		if apiKey == "" {
-			return fmt.Errorf("OPPER_API_KEY environment variable not set")
-		}
-		client = opperai.NewClient(apiKey)
-	}
-
-	if c.Stream {
-		res, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, true)
-		if err != nil {
-			return err
-		}
-
-		for chunk := range res.Stream {
-			fmt.Print(chunk)
-		}
-		return nil
-	}
-
-	result, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, false)
+	// Always use streaming for better user experience
+	response, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, true)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(result.Message)
+	if response == nil {
+		return fmt.Errorf("received empty response from API")
+	}
+
+	// Stream the response to console
+	for delta := range response.Stream {
+		fmt.Print(delta)
+	}
+	fmt.Println() // Add newline at the end
+
 	return nil
 }

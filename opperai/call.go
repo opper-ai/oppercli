@@ -1,9 +1,14 @@
 package opperai
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
 )
 
 type CallClient struct {
@@ -24,14 +29,20 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 		"name":         name,
 		"instructions": instructions,
 		"input":        input,
+		"stream":       stream,
+		"model":        model,
+		"configuration": map[string]interface{}{
+			"invocation": map[string]interface{}{
+				"few_shot": map[string]interface{}{
+					"count": 0,
+				},
+			},
+			"model_parameters": map[string]interface{}{},
+		},
 	}
 
-	if model != "" {
-		payload["model"] = model
-	}
-
-	if stream {
-		payload["stream"] = true
+	if model == "" {
+		delete(payload, "model")
 	}
 
 	data, err := json.Marshal(payload)
@@ -43,27 +54,47 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+
+	// Handle non-200 status codes first
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, fmt.Errorf("%s", string(body))
+	}
 
 	if stream {
 		streamChan := make(chan string)
 		go func() {
 			defer close(streamChan)
-			decoder := json.NewDecoder(resp.Body)
-			for decoder.More() {
+			defer resp.Body.Close()
+
+			reader := bufio.NewReader(resp.Body)
+			for {
+				line, err := reader.ReadBytes('\n')
+				if err != nil {
+					if err != io.EOF {
+						fmt.Fprintf(os.Stderr, "Error reading stream: %v\n", err)
+					}
+					return
+				}
+
+				// Skip empty lines
+				if len(line) == 0 {
+					continue
+				}
+
+				// Remove "data: " prefix if present
+				data := bytes.TrimPrefix(line, []byte("data: "))
+
+				// Try to parse the JSON
 				var chunk struct {
 					Delta string `json:"delta"`
 				}
-				line, err := decoder.Token()
-				if err != nil {
-					// Handle error
-					return
+				if err := json.Unmarshal(data, &chunk); err != nil {
+					continue // Skip malformed JSON
 				}
-				if str, ok := line.(string); ok && str == "data" {
-					if err := decoder.Decode(&chunk); err != nil {
-						// Handle error
-						return
-					}
+
+				if chunk.Delta != "" {
 					streamChan <- chunk.Delta
 				}
 			}
@@ -71,11 +102,18 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 		return &CallResponse{Stream: streamChan}, nil
 	}
 
+	// For non-streaming responses
+	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("error reading response: %w", err)
+	}
+
 	var result struct {
 		Message string `json:"message"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("error parsing response: %w", err)
 	}
 
 	return &CallResponse{Message: result.Message}, nil

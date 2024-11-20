@@ -79,6 +79,8 @@ func (c *CreateModelCommand) Execute(ctx context.Context, client *opperai.Client
 	}
 
 	fmt.Printf("Successfully created model: %s\n", c.Name)
+	fmt.Printf("To test your model, run: opper models test %s\n", c.Name)
+
 	return nil
 }
 
@@ -122,6 +124,35 @@ func (c *GetModelCommand) Execute(ctx context.Context, client *opperai.Client) e
 		if err == nil {
 			fmt.Printf("Extra:\n%s\n", string(extraJSON))
 		}
+	}
+
+	return nil
+}
+
+// TestModelCommand handles testing custom language models
+type TestModelCommand struct {
+	Name string
+}
+
+func (c *TestModelCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	// First verify the model exists
+	model, err := client.Models.Get(ctx, c.Name)
+	if err != nil {
+		return fmt.Errorf("error getting model: %w", err)
+	}
+
+	fmt.Printf("Testing model %s (%s)...\n", c.Name, model.Identifier)
+
+	// Create a call command to test the model
+	callCmd := &CallCommand{
+		Name:         "opper/cli/model-test",
+		Instructions: "The user will input a model name. just confirm that it is working, return the model name, keep it short and do not ask questions.",
+		Input:        c.Name,
+		Model:        c.Name,
+	}
+
+	if err := callCmd.Execute(ctx, client); err != nil {
+		return fmt.Errorf("model test failed: %w", err)
 	}
 
 	return nil

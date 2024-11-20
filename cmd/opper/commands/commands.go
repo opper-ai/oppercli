@@ -30,9 +30,12 @@ func GetHelpText() string {
   opper <command> <subcommand> [arguments]
 
 Commands:
-  call <name> <instructions>   Call a function
-    Input: echo "input" | opper call <name> <instructions>
-           opper call <name> <instructions> <input...>
+  call [--model <model-name>] <name> <instructions> <input>   Call a function
+    Both instructions and input are required
+    Examples:
+      opper call <name> "respond in kind" "what is 2+2?"
+      opper call --model my-model <name> "respond in kind" "what is 2+2?"
+      echo "what is 2+2?" | opper call <name> "respond in kind"
 
   indexes:
     list [filter]              List indexes
@@ -53,6 +56,7 @@ Commands:
     create <name> <litellm-id> <key> [extra] Create a new model
     delete <name>              Delete a model
     get <name>                 Get model details
+    test <name>                Test a model with an interactive prompt
 
   functions:
     list [filter]              List functions, optionally filtering by name

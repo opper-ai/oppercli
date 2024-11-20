@@ -117,7 +117,7 @@ func (p *CommandParser) parseFunctionsCommand(args []string) (Command, error) {
 
 func (p *CommandParser) parseModelsCommand(args []string) (Command, error) {
 	if len(args) < 1 {
-		return nil, fmt.Errorf("models subcommand required (list, create, delete, get)")
+		return nil, fmt.Errorf("models subcommand required (list, create, delete, get, test)")
 	}
 
 	switch args[0] {
@@ -151,6 +151,11 @@ func (p *CommandParser) parseModelsCommand(args []string) (Command, error) {
 			return nil, fmt.Errorf("usage: models get <name>")
 		}
 		return &GetModelCommand{Name: args[1]}, nil
+	case "test":
+		if len(args) < 2 {
+			return nil, fmt.Errorf("usage: models test <name>")
+		}
+		return &TestModelCommand{Name: args[1]}, nil
 	default:
 		return nil, fmt.Errorf("unknown models subcommand: %s", args[0])
 	}
@@ -303,12 +308,23 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 	case "help":
 		return &HelpCommand{}, nil
 	case "call":
-		if len(args) < 4 {
-			return nil, fmt.Errorf("usage: call <name> <instructions>")
+		// Create a flag set for call command
+		flagSet := flag.NewFlagSet("call", flag.ContinueOnError)
+		model := flagSet.String("model", "", "Custom model to use")
+
+		// Parse flags first
+		if err := flagSet.Parse(args[2:]); err != nil {
+			return nil, err
 		}
 
-		name := args[2]
-		instructions := args[3]
+		// Get remaining args after flags
+		remainingArgs := flagSet.Args()
+		if len(remainingArgs) < 2 {
+			return nil, fmt.Errorf("usage: call [--model <model-name>] <name> <instructions> <input>\n  Example: opper call --model my-model <name> \"respond in kind\" \"what is 2+2?\"")
+		}
+
+		name := remainingArgs[0]
+		instructions := remainingArgs[1]
 		var input string
 
 		// Check if we have data on stdin
@@ -323,15 +339,18 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 				return nil, fmt.Errorf("error reading from stdin: %w", err)
 			}
 			input = strings.Join(inputLines, "\n")
-		} else if len(args) > 4 {
+		} else if len(remainingArgs) > 2 {
 			// If no stdin, use remaining args as input
-			input = strings.Join(args[4:], " ")
+			input = strings.Join(remainingArgs[2:], " ")
+		} else {
+			return nil, fmt.Errorf("input required (either as argument or via stdin)")
 		}
 
 		return &CallCommand{
 			Name:         name,
 			Instructions: instructions,
 			Input:        input,
+			Model:        *model,
 		}, nil
 	default:
 		// Maintain backwards compatibility by treating the first arg as a function name
