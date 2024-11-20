@@ -11,12 +11,8 @@ type CallCommand struct {
 	Name         string
 	Instructions string
 	Input        string
-	Options      *CallOptions
+	Model        string
 	Stream       bool
-}
-
-type CallOptions struct {
-	Model string
 }
 
 func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error {
@@ -31,13 +27,8 @@ func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error
 		return fmt.Errorf("input is required")
 	}
 
-	var model string
-	if c.Options != nil {
-		model = c.Options.Model
-	}
-
 	// Always use streaming for better user experience
-	response, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, model, true)
+	response, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, true)
 	if err != nil {
 		return err
 	}

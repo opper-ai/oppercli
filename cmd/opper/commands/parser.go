@@ -346,18 +346,11 @@ func (p *CommandParser) Parse(args []string) (Command, error) {
 			return nil, fmt.Errorf("input required (either as argument or via stdin)")
 		}
 
-		var options *CallOptions
-		if *model != "" {
-			options = &CallOptions{
-				Model: *model,
-			}
-		}
-
 		return &CallCommand{
 			Name:         name,
 			Instructions: instructions,
 			Input:        input,
-			Options:      options,
+			Model:        *model,
 		}, nil
 	default:
 		// Maintain backwards compatibility by treating the first arg as a function name

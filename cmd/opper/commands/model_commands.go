@@ -147,10 +147,8 @@ func (c *TestModelCommand) Execute(ctx context.Context, client *opperai.Client) 
 	callCmd := &CallCommand{
 		Name:         "opper/cli/model-test",
 		Instructions: "The user will input a model name. just confirm that it is working, return the model name, keep it short and do not ask questions.",
-		Input:        c.Name, // Use the model name as input
-		Options: &CallOptions{
-			Model: c.Name,
-		},
+		Input:        c.Name,
+		Model:        c.Name,
 	}
 
 	if err := callCmd.Execute(ctx, client); err != nil {
