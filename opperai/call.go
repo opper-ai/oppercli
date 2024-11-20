@@ -29,14 +29,20 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 		"name":         name,
 		"instructions": instructions,
 		"input":        input,
+		"stream":       stream,
+		"model":        model,
+		"configuration": map[string]interface{}{
+			"invocation": map[string]interface{}{
+				"few_shot": map[string]interface{}{
+					"count": 0,
+				},
+			},
+			"model_parameters": map[string]interface{}{},
+		},
 	}
 
-	if model != "" {
-		payload["model"] = model
-	}
-
-	if stream {
-		payload["stream"] = true
+	if model == "" {
+		delete(payload, "model")
 	}
 
 	data, err := json.Marshal(payload)
