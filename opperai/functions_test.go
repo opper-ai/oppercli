@@ -18,13 +18,13 @@ const (
 func TestListFunctions(t *testing.T) {
 	tests := []struct {
 		name       string
-		response   []Function
+		response   []FunctionDescription
 		statusCode int
 		wantErr    bool
 	}{
 		{
 			name: "successful list",
-			response: []Function{
+			response: []FunctionDescription{
 				{
 					Path:        "test/function1",
 					Description: "Test function 1",
@@ -50,16 +50,24 @@ func TestListFunctions(t *testing.T) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
-				if r.URL.Path != functionsForOrg {
-					t.Errorf("expected path %s, got %s", functionsForOrg, r.URL.Path)
+				if r.URL.Path != "/v1/functions" {
+					t.Errorf("expected path %s, got %s", "/v1/functions", r.URL.Path)
 				}
 
 				w.WriteHeader(tt.statusCode)
 				if tt.statusCode == http.StatusOK {
 					response := struct {
-						Functions []Function `json:"functions"`
+						Meta struct {
+							TotalCount int `json:"total_count"`
+						} `json:"meta"`
+						Data []FunctionDescription `json:"data"`
 					}{
-						Functions: tt.response,
+						Meta: struct {
+							TotalCount int `json:"total_count"`
+						}{
+							TotalCount: len(tt.response),
+						},
+						Data: tt.response,
 					}
 					json.NewEncoder(w).Encode(response)
 				}
