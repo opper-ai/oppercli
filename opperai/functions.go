@@ -67,7 +67,7 @@ func (c *FunctionsClient) Delete(ctx context.Context, id string, path string) er
 }
 
 func (c *FunctionsClient) List(ctx context.Context) ([]FunctionDescription, error) {
-	resp, err := c.client.DoRequest(ctx, "GET", "/v1/functions", nil)
+	resp, err := c.client.DoRequest(ctx, "GET", "/v1/functions?limit=1000", nil)
 	if err != nil {
 		return nil, err
 	}
