@@ -7,16 +7,6 @@ import (
 	"github.com/opper-ai/oppercli/opperai"
 )
 
-// Command interface defines what all commands must implement
-type Command interface {
-	Execute(ctx context.Context, client *opperai.Client) error
-}
-
-// Base command struct for shared fields
-type BaseCommand struct {
-	FunctionPath string
-}
-
 // HelpCommand shows usage information
 type HelpCommand struct{}
 
