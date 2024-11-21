@@ -144,8 +144,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize the client with base URL from environment or empty string
+	// Get base URL from environment or config file
 	baseURL := os.Getenv("OPPER_BASE_URL")
+	if baseURL == "" {
+		if cfg, err := getConfig(); err == nil && cfg != nil {
+			baseURL = cfg.GetBaseUrl(keyName)
+		}
+	}
+
+	// Initialize the client
 	client := opperai.NewClient(apiKey, baseURL)
 
 	// Create command parser
@@ -169,4 +176,15 @@ func main() {
 		fmt.Println("Error executing command:", err)
 		os.Exit(1)
 	}
+}
+
+// Add helper function to get config
+func getConfig() (*config.Config, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("could not get home directory: %w", err)
+	}
+
+	configPath := filepath.Join(homeDir, ".oppercli")
+	return readConfig(configPath)
 }
