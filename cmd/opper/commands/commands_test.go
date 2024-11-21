@@ -11,7 +11,7 @@ import (
 	"github.com/opper-ai/oppercli/opperai"
 )
 
-func setupTestServer(t *testing.T, handler http.HandlerFunc) (*httptest.Server, *opperai.Client) {
+func setupTestServer(handler http.HandlerFunc) (*httptest.Server, *opperai.Client) {
 	server := httptest.NewServer(handler)
 	client := opperai.NewClient("test-key", server.URL)
 	return server, client
@@ -47,7 +47,7 @@ func TestExecuteListIndexes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server, client := setupTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+			server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
 				if tt.statusCode == http.StatusOK {
 					json.NewEncoder(w).Encode(tt.response)

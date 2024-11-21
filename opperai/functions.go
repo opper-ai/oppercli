@@ -67,7 +67,7 @@ func (c *FunctionsClient) Delete(ctx context.Context, id string, path string) er
 }
 
 func (c *FunctionsClient) List(ctx context.Context) ([]FunctionDescription, error) {
-	resp, err := c.client.DoRequest(ctx, "GET", "/api/v1/functions/for_org", nil)
+	resp, err := c.client.DoRequest(ctx, "GET", "/v1/functions?limit=1000", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -77,20 +77,19 @@ func (c *FunctionsClient) List(ctx context.Context) ([]FunctionDescription, erro
 		return nil, fmt.Errorf("failed to list functions with status %s", resp.Status)
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
+	// Create a struct to match the API response structure
 	var response struct {
-		Functions []FunctionDescription `json:"functions"`
-	}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return nil, err
+		Meta struct {
+			TotalCount int `json:"total_count"`
+		} `json:"meta"`
+		Data []FunctionDescription `json:"data"`
 	}
 
-	return response.Functions, nil
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("error decoding response: %w", err)
+	}
+
+	return response.Data, nil
 }
 
 func (c *FunctionsClient) GetByPath(ctx context.Context, functionPath string) (*FunctionDescription, error) {

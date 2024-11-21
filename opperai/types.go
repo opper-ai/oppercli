@@ -32,12 +32,22 @@ type FunctionResponse struct {
 
 // FunctionDescription represents the description of a function.
 type FunctionDescription struct {
-	Path         string            `json:"path"`
-	Instructions string            `json:"instructions"`
-	Description  string            `json:"description"`
-	Model        string            `json:"model,omitempty"`        // For custom model support
-	IndexConfig  *IndexConfig      `json:"index_config,omitempty"` // For index support
-	Metadata     map[string]string `json:"metadata,omitempty"`     // For additional configuration
+	Path              string                 `json:"path"`
+	Instructions      string                 `json:"instructions"`
+	Description       string                 `json:"description"`
+	UUID              string                 `json:"uuid"`
+	Model             string                 `json:"model"`
+	LanguageModelID   int                    `json:"language_model_id"`
+	Dataset           Dataset                `json:"dataset"`
+	Project           Project                `json:"project"`
+	FewShot           bool                   `json:"few_shot"`
+	FewShotCount      int                    `json:"few_shot_count"`
+	UseSemanticSearch bool                   `json:"use_semantic_search"`
+	Revision          int                    `json:"revision"`
+	InputSchema       map[string]interface{} `json:"input_schema"`
+	OutputSchema      map[string]interface{} `json:"out_schema"`
+	IndexConfig       *IndexConfig           `json:"index_config,omitempty"`
+	Metadata          map[string]string      `json:"metadata,omitempty"`
 }
 
 type IndexConfig struct {
@@ -158,4 +168,9 @@ type Span struct {
 	Score          *float64               `json:"score"`
 	TotalTokens    *int                   `json:"total_tokens"`
 	DatasetEntries []interface{}          `json:"dataset_entries"`
+}
+
+type Dataset struct {
+	UUID       string `json:"uuid"`
+	EntryCount int    `json:"entry_count"`
 }

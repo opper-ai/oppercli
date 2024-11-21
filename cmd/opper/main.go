@@ -19,14 +19,10 @@ import (
 
 var Version = "dev"
 
-func getAPIKey() (string, error) {
-	// Parse flags early to get key name
-	keyName := flag.String("key", "", "Name of the API key to use")
-	flag.Parse()
-
+func getAPIKey(keyName string) (string, error) {
 	// First check environment variable for specific key name
 	if envKeyName := os.Getenv("OPPER_KEY_NAME"); envKeyName != "" {
-		*keyName = envKeyName
+		keyName = envKeyName
 	}
 
 	// Check environment variable for API key
@@ -43,15 +39,15 @@ func getAPIKey() (string, error) {
 	configPath := filepath.Join(homeDir, ".oppercli")
 	cfg, err := readConfig(configPath)
 	if err == nil {
-		if apiKey := cfg.GetAPIKey(*keyName); apiKey != "" {
+		if apiKey := cfg.GetAPIKey(keyName); apiKey != "" {
 			return apiKey, nil
 		}
 	}
 
 	// If no key found, prompt user
 	fmt.Printf("No API key found in environment variable OPPER_API_KEY or config file ~/.oppercli")
-	if *keyName != "" {
-		fmt.Printf(" for key '%s'", *keyName)
+	if keyName != "" {
+		fmt.Printf(" for key '%s'", keyName)
 	}
 	fmt.Println()
 
@@ -67,12 +63,7 @@ func getAPIKey() (string, error) {
 		return "", fmt.Errorf("API key is required to use opper CLI")
 	}
 
-	// If no key name specified, use default
-	if *keyName == "" {
-		*keyName = "default"
-	}
-
-	fmt.Printf("Enter your API key for '%s': ", *keyName)
+	fmt.Printf("Enter your API key for '%s': ", keyName)
 	apiKey, err := reader.ReadString('\n')
 	if err != nil {
 		return "", fmt.Errorf("error reading API key: %w", err)
@@ -85,7 +76,7 @@ func getAPIKey() (string, error) {
 			APIKeys: make(map[string]config.APIKeyConfig),
 		}
 	}
-	cfg.APIKeys[*keyName] = config.APIKeyConfig{
+	cfg.APIKeys[keyName] = config.APIKeyConfig{
 		Key: apiKey,
 	}
 
@@ -129,28 +120,48 @@ func saveConfig(path string, cfg *config.Config) error {
 }
 
 func main() {
+	// Parse global flags first
+	var keyName string
+	flag.StringVar(&keyName, "key", "", "Name of the API key to use")
+	flag.Parse()
+
+	// Get remaining args
+	args := flag.Args()
+	if len(args) == 0 {
+		args = []string{"help"}
+	}
+
 	// Add version flag handling
-	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
+	if len(args) > 0 && (args[0] == "--version" || args[0] == "-v") {
 		fmt.Printf("opper version %s\n", Version)
 		os.Exit(0)
 	}
 
 	// Get API key from environment or config file
-	apiKey, err := getAPIKey()
+	apiKey, err := getAPIKey(keyName)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 
-	// Initialize the client with base URL from environment or empty string
+	// Get base URL from environment or config file
 	baseURL := os.Getenv("OPPER_BASE_URL")
+	if baseURL == "" {
+		if cfg, err := getConfig(); err == nil && cfg != nil {
+			baseURL = cfg.GetBaseUrl(keyName)
+		}
+	}
+
+	// Initialize the client
 	client := opperai.NewClient(apiKey, baseURL)
 
 	// Create command parser
 	parser := commands.NewCommandParser()
 
-	// Parse command
-	cmd, err := parser.Parse(os.Args)
+	// Parse command using the remaining args
+	// Add program name back to args for parser
+	fullArgs := append([]string{"opper"}, args...)
+	cmd, err := parser.Parse(fullArgs)
 	if err != nil {
 		fmt.Println("Error parsing command:", err)
 		os.Exit(1)
@@ -165,4 +176,15 @@ func main() {
 		fmt.Println("Error executing command:", err)
 		os.Exit(1)
 	}
+}
+
+// Add helper function to get config
+func getConfig() (*config.Config, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("could not get home directory: %w", err)
+	}
+
+	configPath := filepath.Join(homeDir, ".oppercli")
+	return readConfig(configPath)
 }

@@ -74,9 +74,77 @@ func (c *GetCommand) Execute(ctx context.Context, client *opperai.Client) error 
 		return fmt.Errorf("function not found")
 	}
 
-	fmt.Printf("Path: %s\nDescription: %s\nInstructions: %s\n\n",
-		function.Path, function.Description, function.Instructions)
+	// Print basic information
+	fmt.Printf("Function: %s\n", function.Path)
+	fmt.Printf("%-20s %s\n", "Description:", function.Description)
+	if function.UUID != "" {
+		fmt.Printf("%-20s %s\n", "UUID:", function.UUID)
+	}
+
+	// Print model information
+	if function.Model != "" {
+		fmt.Printf("%-20s %s", "Model:", function.Model)
+		if function.LanguageModelID != 0 {
+			fmt.Printf(" (ID: %d)", function.LanguageModelID)
+		}
+		fmt.Println()
+	}
+
+	// Print dataset information
+	if function.Dataset.UUID != "" {
+		fmt.Printf("\nDataset Information:\n")
+		fmt.Printf("%-20s %s\n", "UUID:", function.Dataset.UUID)
+		if function.Dataset.EntryCount > 0 {
+			fmt.Printf("%-20s %d\n", "Entry Count:", function.Dataset.EntryCount)
+		}
+	}
+
+	// Print project information
+	if function.Project.UUID != "" {
+		fmt.Printf("\nProject Information:\n")
+		if function.Project.Name != "" {
+			fmt.Printf("%-20s %s\n", "Name:", function.Project.Name)
+		}
+		fmt.Printf("%-20s %s\n", "UUID:", function.Project.UUID)
+	}
+
+	// Print few-shot settings
+	if function.FewShot || function.FewShotCount > 0 {
+		fmt.Printf("\nFew-Shot Settings:\n")
+		fmt.Printf("%-20s %v\n", "Enabled:", function.FewShot)
+		fmt.Printf("%-20s %d\n", "Count:", function.FewShotCount)
+	}
+
+	// Print additional settings
+	fmt.Printf("\nAdditional Settings:\n")
+	fmt.Printf("%-20s %v\n", "Semantic Search:", function.UseSemanticSearch)
+	if function.Revision > 0 {
+		fmt.Printf("%-20s %d\n", "Revision:", function.Revision)
+	}
+
+	// Print schemas if they exist
+	if len(function.InputSchema) > 0 {
+		fmt.Printf("\nInput Schema:\n")
+		prettyPrintSchema(function.InputSchema)
+	}
+
+	if len(function.OutputSchema) > 0 {
+		fmt.Printf("\nOutput Schema:\n")
+		prettyPrintSchema(function.OutputSchema)
+	}
+
+	// Print instructions
+	if function.Instructions != "" {
+		fmt.Printf("\nInstructions:\n%s\n", function.Instructions)
+	}
+
 	return nil
+}
+
+func prettyPrintSchema(schema map[string]interface{}) {
+	for key, value := range schema {
+		fmt.Printf("  %-18s %v\n", key+":", value)
+	}
 }
 
 // CreateCommand handles function creation
