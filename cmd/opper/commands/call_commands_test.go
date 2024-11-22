@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -55,18 +54,12 @@ func TestCallCommand_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if tt.command.Stream {
-					w.Header().Set("Content-Type", "text/event-stream")
-					w.WriteHeader(http.StatusOK)
-					fmt.Fprintf(w, "data: {\"delta\":\"%s\"}\n\n", tt.mockResponse)
-					w.(http.Flusher).Flush()
-				} else {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusOK)
-					json.NewEncoder(w).Encode(map[string]string{
-						"message": tt.mockResponse,
-					})
-				}
+				// First request (non-streaming) always returns JSON
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(map[string]string{
+					"message": tt.mockResponse,
+				})
 			}))
 			defer server.Close()
 

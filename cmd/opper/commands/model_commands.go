@@ -141,18 +141,18 @@ func (c *TestModelCommand) Execute(ctx context.Context, client *opperai.Client) 
 		return fmt.Errorf("error getting model: %w", err)
 	}
 
-	fmt.Printf("Testing model %s (%s)...\n", c.Name, model.Identifier)
+	fmt.Printf("Testing model %s (%s)...\n\n", c.Name, model.Identifier)
 
 	// Create a call command to test the model
 	callCmd := &CallCommand{
 		Name:         "opper/cli/model-test",
-		Instructions: "The user will input a model name. just confirm that it is working, return the model name, keep it short and do not ask questions.",
+		Instructions: "The user will input a model name. just confirm that it is working, return the model name, confirm it's working, keep it short and do not ask questions.",
 		Input:        c.Name,
 		Model:        c.Name,
 	}
 
 	if err := callCmd.Execute(ctx, client); err != nil {
-		return fmt.Errorf("model test failed: %w", err)
+		return err
 	}
 
 	return nil

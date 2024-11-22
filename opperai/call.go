@@ -59,7 +59,21 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		return nil, fmt.Errorf("%s", string(body))
+
+		// Try to parse error response
+		var errResp struct {
+			Type  string `json:"type"`
+			Error struct {
+				Type    string `json:"type"`
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+
+		if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
+			return nil, fmt.Errorf("%s - %s", errResp.Error.Type, errResp.Error.Message)
+		}
+
+		return nil, fmt.Errorf("API error: %s", string(body))
 	}
 
 	if stream {
