@@ -27,21 +27,30 @@ func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error
 		return fmt.Errorf("input is required")
 	}
 
-	// Always use streaming for better user experience
-	response, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, true)
+	// Try with non-streaming first
+	response, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, false)
 	if err != nil {
-		return err
+		return err // Return the error directly to preserve the error message
 	}
 
 	if response == nil {
 		return fmt.Errorf("received empty response from API")
 	}
 
-	// Stream the response to console
-	for delta := range response.Stream {
-		fmt.Print(delta)
+	// If non-streaming succeeded, use streaming for output
+	if c.Stream {
+		streamResponse, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, true)
+		if err != nil {
+			return err
+		}
+
+		for delta := range streamResponse.Stream {
+			fmt.Print(delta)
+		}
+		fmt.Println()
+	} else {
+		fmt.Println(response.Message)
 	}
-	fmt.Println() // Add newline at the end
 
 	return nil
 }
