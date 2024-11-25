@@ -1,190 +1,473 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"flag"
 	"fmt"
+	"io"
 	"os"
-	"path/filepath"
 	"strings"
-	"time"
-
-	"gopkg.in/yaml.v3"
 
 	"github.com/opper-ai/oppercli/cmd/opper/commands"
 	"github.com/opper-ai/oppercli/cmd/opper/config"
 	"github.com/opper-ai/oppercli/opperai"
+	"github.com/spf13/cobra"
 )
 
-var Version = "dev"
+func executeCommand(cmd commands.Command) error {
+	ctx := context.Background()
 
-func getAPIKey(keyName string) (string, error) {
-	// First check environment variable for specific key name
-	if envKeyName := os.Getenv("OPPER_KEY_NAME"); envKeyName != "" {
-		keyName = envKeyName
-	}
-
-	// Check environment variable for API key
-	if apiKey := os.Getenv("OPPER_API_KEY"); apiKey != "" {
-		return apiKey, nil
-	}
-
-	// Check config file
-	homeDir, err := os.UserHomeDir()
+	// Get API key from environment or config
+	apiKey, err := config.GetAPIKey("default")
 	if err != nil {
-		return "", fmt.Errorf("could not get home directory: %w", err)
+		return err
 	}
 
-	configPath := filepath.Join(homeDir, ".oppercli")
-	cfg, err := readConfig(configPath)
-	if err == nil {
-		if apiKey := cfg.GetAPIKey(keyName); apiKey != "" {
-			return apiKey, nil
-		}
-	}
-
-	// If no key found, prompt user
-	fmt.Printf("No API key found in environment variable OPPER_API_KEY or config file ~/.oppercli")
-	if keyName != "" {
-		fmt.Printf(" for key '%s'", keyName)
-	}
-	fmt.Println()
-
-	fmt.Print("Would you like to save an API key now? (y/n): ")
-	reader := bufio.NewReader(os.Stdin)
-	response, err := reader.ReadString('\n')
-	if err != nil {
-		return "", fmt.Errorf("error reading input: %w", err)
-	}
-
-	response = strings.TrimSpace(strings.ToLower(response))
-	if response != "y" && response != "yes" {
-		return "", fmt.Errorf("API key is required to use opper CLI")
-	}
-
-	fmt.Printf("Enter your API key for '%s': ", keyName)
-	apiKey, err := reader.ReadString('\n')
-	if err != nil {
-		return "", fmt.Errorf("error reading API key: %w", err)
-	}
-	apiKey = strings.TrimSpace(apiKey)
-
-	// Create new config with API key
-	if cfg == nil {
-		cfg = &config.Config{
-			APIKeys: make(map[string]config.APIKeyConfig),
-		}
-	}
-	cfg.APIKeys[keyName] = config.APIKeyConfig{
-		Key: apiKey,
-	}
-
-	// Save to config file
-	err = saveConfig(configPath, cfg)
-	if err != nil {
-		return "", fmt.Errorf("error saving config: %w", err)
-	}
-
-	fmt.Printf("API key saved to %s\n", configPath)
-	return apiKey, nil
-}
-
-func readConfig(path string) (*config.Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var cfg config.Config
-	err = yaml.Unmarshal(data, &cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing config file: %w", err)
-	}
-
-	// Initialize the map if it's nil
-	if cfg.APIKeys == nil {
-		cfg.APIKeys = make(map[string]config.APIKeyConfig)
-	}
-
-	return &cfg, nil
-}
-
-func saveConfig(path string, cfg *config.Config) error {
-	data, err := yaml.Marshal(cfg)
-	if err != nil {
-		return fmt.Errorf("error marshaling config: %w", err)
-	}
-
-	return os.WriteFile(path, data, 0600)
+	client := opperai.NewClient(apiKey)
+	return cmd.Execute(ctx, client)
 }
 
 func main() {
-	// Parse global flags first
+	var rootCmd = &cobra.Command{
+		Use:           "opper",
+		Short:         "Opper CLI - interact with Opper AI services",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+	}
+
+	// Global flags
 	var keyName string
-	flag.StringVar(&keyName, "key", "", "Name of the API key to use")
-	flag.Parse()
+	rootCmd.PersistentFlags().StringVar(&keyName, "key", "default", "API key to use from config")
 
-	// Get remaining args
-	args := flag.Args()
-	if len(args) == 0 {
-		args = []string{"help"}
-	}
-
-	// Add version flag handling
-	if len(args) > 0 && (args[0] == "--version" || args[0] == "-v") {
-		fmt.Printf("opper version %s\n", Version)
-		os.Exit(0)
-	}
-
-	// Get API key from environment or config file
-	apiKey, err := getAPIKey(keyName)
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	}
-
-	// Get base URL from environment or config file
-	baseURL := os.Getenv("OPPER_BASE_URL")
-	if baseURL == "" {
-		if cfg, err := getConfig(); err == nil && cfg != nil {
-			baseURL = cfg.GetBaseUrl(keyName)
+	// Update executeCommand to use baseUrl
+	executeCommand := func(cmd commands.Command) error {
+		ctx := context.Background()
+		apiKey, baseUrl, err := config.GetAPIKeyAndBaseUrl(keyName)
+		if err != nil {
+			return err
 		}
+		client := opperai.NewClient(apiKey, baseUrl)
+		return cmd.Execute(ctx, client)
 	}
 
-	// Initialize the client
-	client := opperai.NewClient(apiKey, baseURL)
+	// Indexes command
+	var indexesCmd = &cobra.Command{
+		Use:   "indexes",
+		Short: "Manage indexes",
+	}
 
-	// Create command parser
-	parser := commands.NewCommandParser()
+	var listIndexesCmd = &cobra.Command{
+		Use:   "list [filter]",
+		Short: "List indexes",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			filter := ""
+			if len(args) > 0 {
+				filter = args[0]
+			}
+			return executeCommand(&commands.ListIndexesCommand{Filter: filter})
+		},
+	}
 
-	// Parse command using the remaining args
-	// Add program name back to args for parser
-	fullArgs := append([]string{"opper"}, args...)
-	cmd, err := parser.Parse(fullArgs)
-	if err != nil {
-		fmt.Println("Error parsing command:", err)
+	var createIndexCmd = &cobra.Command{
+		Use:   "create <name>",
+		Short: "Create a new index",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.CreateIndexCommand{Name: args[0]})
+		},
+	}
+
+	var deleteIndexCmd = &cobra.Command{
+		Use:   "delete <name>",
+		Short: "Delete an index",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			force, _ := cmd.Flags().GetBool("yes")
+			confirmed, err := commands.ConfirmDeletion("index", args[0], force)
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				fmt.Println("Operation cancelled")
+				return nil
+			}
+			return executeCommand(&commands.DeleteIndexCommand{Name: args[0]})
+		},
+	}
+	deleteIndexCmd.Flags().BoolP("yes", "y", false, "Skip confirmation prompt")
+
+	var queryIndexCmd = &cobra.Command{
+		Use:   "query <name> <query> [filter_json]",
+		Short: "Query an index",
+		Args:  cobra.RangeArgs(2, 3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			filter := "{}"
+			if len(args) > 2 {
+				filter = args[2]
+			}
+			return executeCommand(&commands.QueryIndexCommand{
+				Name:   args[0],
+				Query:  args[1],
+				Filter: filter,
+			})
+		},
+	}
+
+	var getIndexCmd = &cobra.Command{
+		Use:   "get <name>",
+		Short: "Get index details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.GetIndexCommand{Name: args[0]})
+		},
+	}
+
+	var addToIndexCmd = &cobra.Command{
+		Use:   "add <name> <key> <content> [metadata_json]",
+		Short: "Add content to an index",
+		Args:  cobra.RangeArgs(3, 4),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			metadata := "{}"
+			if len(args) > 3 {
+				metadata = args[3]
+			}
+			return executeCommand(&commands.AddToIndexCommand{
+				Name:     args[0],
+				Key:      args[1],
+				Content:  args[2],
+				Metadata: metadata,
+			})
+		},
+	}
+
+	var uploadToIndexCmd = &cobra.Command{
+		Use:   "upload <name> <file_path>",
+		Short: "Upload and index a file",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.UploadToIndexCommand{
+				Name:     args[0],
+				FilePath: args[1],
+			})
+		},
+	}
+
+	indexesCmd.AddCommand(listIndexesCmd, createIndexCmd, deleteIndexCmd, queryIndexCmd,
+		getIndexCmd, addToIndexCmd, uploadToIndexCmd)
+
+	// Models command
+	var modelsCmd = &cobra.Command{
+		Use:   "models",
+		Short: "Manage models",
+	}
+
+	var listModelsCmd = &cobra.Command{
+		Use:   "list [filter]",
+		Short: "List models",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			filter := ""
+			if len(args) > 0 {
+				filter = args[0]
+			}
+			return executeCommand(&commands.ListModelsCommand{Filter: filter})
+		},
+	}
+
+	var createModelCmd = &cobra.Command{
+		Use:   "create <name> <litellm-id> <api-key> [extra_json]",
+		Short: "Create a new model",
+		Args:  cobra.RangeArgs(3, 4),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			extra := "{}"
+			if len(args) > 3 {
+				extra = args[3]
+			}
+			return executeCommand(&commands.CreateModelCommand{
+				Name:       args[0],
+				Identifier: args[1],
+				APIKey:     args[2],
+				Extra:      extra,
+			})
+		},
+	}
+
+	var deleteModelCmd = &cobra.Command{
+		Use:   "delete <name>",
+		Short: "Delete a model",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			force, _ := cmd.Flags().GetBool("yes")
+			confirmed, err := commands.ConfirmDeletion("model", args[0], force)
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				fmt.Println("Operation cancelled")
+				return nil
+			}
+			return executeCommand(&commands.DeleteModelCommand{Name: args[0]})
+		},
+	}
+	deleteModelCmd.Flags().BoolP("yes", "y", false, "Skip confirmation prompt")
+
+	var getModelCmd = &cobra.Command{
+		Use:   "get <name>",
+		Short: "Get model details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.GetModelCommand{Name: args[0]})
+		},
+	}
+
+	var testModelCmd = &cobra.Command{
+		Use:   "test <name>",
+		Short: "Test a model with an interactive prompt",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.TestModelCommand{Name: args[0]})
+		},
+	}
+
+	modelsCmd.AddCommand(listModelsCmd, createModelCmd, deleteModelCmd, getModelCmd, testModelCmd)
+
+	// Traces command
+	var tracesCmd = &cobra.Command{
+		Use:   "traces",
+		Short: "Manage traces",
+	}
+
+	var listTracesCmd = &cobra.Command{
+		Use:   "list",
+		Short: "List traces",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			live, _ := cmd.Flags().GetBool("live")
+			return executeCommand(&commands.ListTracesCommand{Live: live})
+		},
+	}
+	listTracesCmd.Flags().Bool("live", false, "Watch for updates")
+
+	var getTraceCmd = &cobra.Command{
+		Use:   "get <trace-id>",
+		Short: "Get trace details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			live, _ := cmd.Flags().GetBool("live")
+			return executeCommand(&commands.GetTraceCommand{
+				TraceID: args[0],
+				Live:    live,
+			})
+		},
+	}
+	getTraceCmd.Flags().Bool("live", false, "Watch for updates")
+
+	tracesCmd.AddCommand(listTracesCmd, getTraceCmd)
+
+	// Functions command
+	var functionsCmd = &cobra.Command{
+		Use:   "functions",
+		Short: "Manage functions",
+	}
+
+	var listFunctionsCmd = &cobra.Command{
+		Use:   "list [filter]",
+		Short: "List functions",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			filter := ""
+			if len(args) > 0 {
+				filter = args[0]
+			}
+			return executeCommand(&commands.ListCommand{Filter: filter})
+		},
+	}
+
+	var createFunctionCmd = &cobra.Command{
+		Use:   "create <name> [instructions]",
+		Short: "Create a new function",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			instructions := ""
+			if len(args) > 1 {
+				instructions = strings.Join(args[1:], " ")
+			}
+			return executeCommand(&commands.CreateCommand{
+				BaseCommand: commands.BaseCommand{
+					FunctionPath: args[0],
+				},
+				Instructions: instructions,
+			})
+		},
+	}
+
+	var deleteFunctionCmd = &cobra.Command{
+		Use:   "delete <name>",
+		Short: "Delete a function",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			force, _ := cmd.Flags().GetBool("yes")
+			confirmed, err := commands.ConfirmDeletion("function", args[0], force)
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				fmt.Println("Operation cancelled")
+				return nil
+			}
+			return executeCommand(&commands.DeleteCommand{
+				BaseCommand: commands.BaseCommand{
+					FunctionPath: args[0],
+				},
+			})
+		},
+	}
+	deleteFunctionCmd.Flags().BoolP("yes", "y", false, "Skip confirmation prompt")
+
+	var getFunctionCmd = &cobra.Command{
+		Use:   "get <name>",
+		Short: "Get function details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.GetCommand{
+				BaseCommand: commands.BaseCommand{
+					FunctionPath: args[0],
+				},
+			})
+		},
+	}
+
+	var chatFunctionCmd = &cobra.Command{
+		Use:   "chat <name> [message]",
+		Short: "Chat with a function",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var message string
+			if len(args) > 1 {
+				message = strings.Join(args[1:], " ")
+			} else {
+				// Read from stdin
+				stdinData, err := io.ReadAll(os.Stdin)
+				if err != nil {
+					return fmt.Errorf("error reading from stdin: %w", err)
+				}
+				message = string(stdinData)
+			}
+			if message == "" {
+				return fmt.Errorf("message required (either as arguments or via stdin)")
+			}
+			return executeCommand(&commands.FunctionChatCommand{
+				BaseCommand: commands.BaseCommand{
+					FunctionPath: args[0],
+				},
+				Message: message,
+			})
+		},
+	}
+
+	functionsCmd.AddCommand(listFunctionsCmd, createFunctionCmd, deleteFunctionCmd,
+		getFunctionCmd, chatFunctionCmd)
+
+	// Call command
+	var callCmd = &cobra.Command{
+		Use:   "call [flags] <name> <instructions> <input>",
+		Short: "Call a function",
+		Args:  cobra.MinimumNArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			model, _ := cmd.Flags().GetString("model")
+
+			var input string
+			if len(args) > 2 {
+				input = args[2]
+			} else {
+				// Read from stdin
+				stdinData, err := io.ReadAll(os.Stdin)
+				if err != nil {
+					return fmt.Errorf("error reading from stdin: %w", err)
+				}
+				input = string(stdinData)
+			}
+
+			return executeCommand(&commands.CallCommand{
+				Name:         args[0],
+				Instructions: args[1],
+				Input:        input,
+				Model:        model,
+			})
+		},
+	}
+	callCmd.Flags().String("model", "", "Custom model to use")
+
+	// Config command
+	var configCmd = &cobra.Command{
+		Use:   "config",
+		Short: "Manage API keys and configuration",
+	}
+
+	var listConfigCmd = &cobra.Command{
+		Use:   "list",
+		Short: "List configured API keys",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.ConfigCommand{Action: "list"})
+		},
+	}
+
+	var addConfigCmd = &cobra.Command{
+		Use:   "add <name> <api-key>",
+		Short: "Add a new API key",
+		Args:  cobra.RangeArgs(2, 3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			baseUrl, _ := cmd.Flags().GetString("base-url")
+			return executeCommand(&commands.ConfigCommand{
+				Action:  "add",
+				Name:    args[0],
+				Key:     args[1],
+				BaseUrl: baseUrl,
+			})
+		},
+	}
+	addConfigCmd.Flags().String("base-url", "", "Base URL for the API")
+
+	var removeConfigCmd = &cobra.Command{
+		Use:   "remove <name>",
+		Short: "Remove an API key",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			force, _ := cmd.Flags().GetBool("yes")
+			confirmed, err := commands.ConfirmDeletion("API key", args[0], force)
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				fmt.Println("Operation cancelled")
+				return nil
+			}
+			return executeCommand(&commands.ConfigCommand{
+				Action: "remove",
+				Name:   args[0],
+			})
+		},
+	}
+	removeConfigCmd.Flags().BoolP("yes", "y", false, "Skip confirmation prompt")
+
+	configCmd.AddCommand(listConfigCmd, addConfigCmd, removeConfigCmd)
+
+	// Add all top-level commands
+	rootCmd.AddCommand(indexesCmd, modelsCmd, tracesCmd, functionsCmd, callCmd, configCmd)
+
+	if err := rootCmd.Execute(); err != nil {
+		cmd, _, findErr := rootCmd.Find(os.Args[1:])
+		if findErr != nil {
+			cmd = rootCmd
+		}
+
+		fmt.Fprintln(os.Stderr, "Error:", err)
+
+		// Show usage for user errors
+		if commands.IsUsageError(err) {
+			fmt.Fprintln(os.Stderr)
+			fmt.Fprintln(os.Stderr, cmd.UsageString())
+		}
+
 		os.Exit(1)
 	}
-
-	// Create context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	// Execute command
-	if err := cmd.Execute(ctx, client); err != nil {
-		fmt.Println("Error executing command:", err)
-		os.Exit(1)
-	}
-}
-
-// Add helper function to get config
-func getConfig() (*config.Config, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("could not get home directory: %w", err)
-	}
-
-	configPath := filepath.Join(homeDir, ".oppercli")
-	return readConfig(configPath)
 }

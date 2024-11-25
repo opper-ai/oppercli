@@ -154,6 +154,9 @@ type CreateCommand struct {
 }
 
 func (c *CreateCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	if c.Instructions == "" {
+		return NewUsageError(fmt.Errorf("instructions required"))
+	}
 	createdFunction, err := client.Functions.Create(ctx, &opperai.Function{
 		Path:         c.FunctionPath,
 		Instructions: c.Instructions,

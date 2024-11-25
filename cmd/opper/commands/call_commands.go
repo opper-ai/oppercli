@@ -16,15 +16,16 @@ type CallCommand struct {
 }
 
 func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	if c.Input == "" {
+		return NewUsageError(fmt.Errorf("input required (either as arguments or via stdin)"))
+	}
+
 	// Validate required fields
 	if c.Name == "" {
 		return fmt.Errorf("name is required")
 	}
 	if c.Instructions == "" {
 		return fmt.Errorf("instructions are required")
-	}
-	if c.Input == "" {
-		return fmt.Errorf("input is required")
 	}
 
 	// Try with non-streaming first

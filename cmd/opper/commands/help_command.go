@@ -11,12 +11,11 @@ import (
 type HelpCommand struct{}
 
 func (c *HelpCommand) Execute(ctx context.Context, client *opperai.Client) error {
-	fmt.Println(GetHelpText())
+	fmt.Print(helpText)
 	return nil
 }
 
-func GetHelpText() string {
-	return `Usage:
+const helpText = `Usage:
   opper <command> <subcommand> [arguments]
 
 Commands:
@@ -39,7 +38,6 @@ Commands:
   traces:
     list                       List all traces
     get <trace-id>             Get details and spans of a trace
-
       
   models:
     list [filter]              List custom language models
@@ -58,4 +56,3 @@ Commands:
              opper functions chat <name> <message...>
 
   help                         Show this help message`
-}
