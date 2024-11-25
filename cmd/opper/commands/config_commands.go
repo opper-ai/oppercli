@@ -33,6 +33,9 @@ func (c *ConfigCommand) Execute(ctx context.Context, client *opperai.Client) err
 		}
 
 	case "add":
+		if c.Name == "" || c.Key == "" {
+			return fmt.Errorf("name and API key required")
+		}
 		cfg.APIKeys[c.Name] = config.APIKeyConfig{
 			Key:     c.Key,
 			BaseUrl: c.BaseUrl,

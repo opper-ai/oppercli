@@ -28,10 +28,8 @@ func executeCommand(cmd commands.Command) error {
 
 func main() {
 	var rootCmd = &cobra.Command{
-		Use:           "opper",
-		Short:         "Opper CLI - interact with Opper AI services",
-		SilenceErrors: true,
-		SilenceUsage:  true,
+		Use:   "opper",
+		Short: "Opper CLI - interact with Opper AI services",
 	}
 
 	// Global flags
@@ -455,19 +453,6 @@ func main() {
 	rootCmd.AddCommand(indexesCmd, modelsCmd, tracesCmd, functionsCmd, callCmd, configCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		cmd, _, findErr := rootCmd.Find(os.Args[1:])
-		if findErr != nil {
-			cmd = rootCmd
-		}
-
-		fmt.Fprintln(os.Stderr, "Error:", err)
-
-		// Show usage for user errors
-		if commands.IsUsageError(err) {
-			fmt.Fprintln(os.Stderr)
-			fmt.Fprintln(os.Stderr, cmd.UsageString())
-		}
-
 		os.Exit(1)
 	}
 }

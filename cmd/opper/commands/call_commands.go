@@ -17,7 +17,7 @@ type CallCommand struct {
 
 func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	if c.Input == "" {
-		return NewUsageError(fmt.Errorf("input required (either as arguments or via stdin)"))
+		return fmt.Errorf("input required (either as arguments or via stdin)")
 	}
 
 	// Validate required fields
