@@ -19,6 +19,7 @@ type BaseCommand struct {
 // Index Commands
 type ListIndexesCommand struct {
 	Filter string
+	Format string
 }
 
 type CreateIndexCommand struct {

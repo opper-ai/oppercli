@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/opper-ai/oppercli/cmd/opper/commands/output"
 	"github.com/opper-ai/oppercli/opperai"
 )
 
@@ -18,9 +19,31 @@ func (c *ListIndexesCommand) Execute(ctx context.Context, client *opperai.Client
 		return err
 	}
 
-	for _, index := range indexes {
-		fmt.Println(index.Name)
+	if c.Format == "table" {
+		// Convert data to rows
+		rows := make([][]string, len(indexes))
+		for i, index := range indexes {
+			rows[i] = []string{
+				index.Name,
+				index.UUID,
+				index.CreatedAt.Format("2006-01-02 15:04:05"),
+			}
+		}
+
+		// Use the table formatter
+		output.Table(
+			[]string{"NAME", "UUID", "CREATED"},
+			rows,
+		)
+	} else {
+		// Plain text output
+		names := make([]string, len(indexes))
+		for i, index := range indexes {
+			names[i] = index.Name
+		}
+		output.Plain(os.Stdout, names)
 	}
+
 	return nil
 }
 
