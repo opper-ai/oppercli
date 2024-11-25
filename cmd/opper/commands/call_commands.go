@@ -7,14 +7,6 @@ import (
 	"github.com/opper-ai/oppercli/opperai"
 )
 
-type CallCommand struct {
-	Name         string
-	Instructions string
-	Input        string
-	Model        string
-	Stream       bool
-}
-
 func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	if c.Input == "" {
 		return fmt.Errorf("input required (either as arguments or via stdin)")

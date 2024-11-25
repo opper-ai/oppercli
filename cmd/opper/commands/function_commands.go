@@ -10,11 +10,6 @@ import (
 	"github.com/opper-ai/oppercli/opperai"
 )
 
-// DeleteCommand handles function deletion
-type DeleteCommand struct {
-	BaseCommand
-}
-
 func (c *DeleteCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	err := client.Functions.Delete(ctx, "", c.FunctionPath)
 	if err != nil {
@@ -22,12 +17,6 @@ func (c *DeleteCommand) Execute(ctx context.Context, client *opperai.Client) err
 	}
 	fmt.Println("Function deleted successfully.")
 	return nil
-}
-
-// ListCommand handles function listing
-type ListCommand struct {
-	BaseCommand
-	Filter string
 }
 
 func (c *ListCommand) Execute(ctx context.Context, client *opperai.Client) error {
@@ -58,11 +47,6 @@ func (c *ListCommand) Execute(ctx context.Context, client *opperai.Client) error
 	}
 	fmt.Println()
 	return nil
-}
-
-// GetCommand handles retrieving function details
-type GetCommand struct {
-	BaseCommand
 }
 
 func (c *GetCommand) Execute(ctx context.Context, client *opperai.Client) error {
@@ -147,12 +131,6 @@ func prettyPrintSchema(schema map[string]interface{}) {
 	}
 }
 
-// CreateCommand handles function creation
-type CreateCommand struct {
-	BaseCommand
-	Instructions string
-}
-
 func (c *CreateCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	if c.Instructions == "" {
 		return fmt.Errorf("instructions required")
@@ -168,12 +146,6 @@ func (c *CreateCommand) Execute(ctx context.Context, client *opperai.Client) err
 	return nil
 }
 
-// FunctionChatCommand handles function chat
-type FunctionChatCommand struct {
-	BaseCommand
-	Message string
-}
-
 func (c *FunctionChatCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	_, err := client.Functions.Chat(ctx, c.FunctionPath, c.Message)
 	if err != nil {
@@ -182,7 +154,6 @@ func (c *FunctionChatCommand) Execute(ctx context.Context, client *opperai.Clien
 	return nil
 }
 
-// ParseFunctionCommand handles function command parsing
 func ParseFunctionCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("function subcommand required (list, create, delete, get, chat)")

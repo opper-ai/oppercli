@@ -51,6 +51,14 @@ func main() {
 	var indexesCmd = &cobra.Command{
 		Use:   "indexes",
 		Short: "Manage indexes",
+		Example: `  # List all indexes
+  opper indexes list
+
+  # Create a new index
+  opper indexes create myindex
+
+  # Query an index
+  opper indexes query myindex "search term"`,
 	}
 
 	var listIndexesCmd = &cobra.Command{

@@ -8,13 +8,6 @@ import (
 	"github.com/opper-ai/oppercli/opperai"
 )
 
-type ConfigCommand struct {
-	Action  string
-	Name    string
-	Key     string
-	BaseUrl string
-}
-
 func (c *ConfigCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	cfg, err := config.LoadConfig()
 	if err != nil {

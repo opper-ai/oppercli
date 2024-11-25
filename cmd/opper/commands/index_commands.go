@@ -12,40 +12,6 @@ import (
 	"github.com/opper-ai/oppercli/opperai"
 )
 
-type ListIndexesCommand struct {
-	Filter string
-}
-
-type CreateIndexCommand struct {
-	Name string
-}
-
-type DeleteIndexCommand struct {
-	Name string
-}
-
-type GetIndexCommand struct {
-	Name string
-}
-
-type QueryIndexCommand struct {
-	Name   string
-	Query  string
-	Filter string
-}
-
-type AddToIndexCommand struct {
-	Name     string
-	Key      string
-	Content  string
-	Metadata string
-}
-
-type UploadToIndexCommand struct {
-	Name     string
-	FilePath string
-}
-
 func (c *ListIndexesCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	indexes, err := client.Indexes.List("")
 	if err != nil {
