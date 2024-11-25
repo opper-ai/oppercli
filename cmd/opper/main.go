@@ -13,6 +13,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version = "dev"
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version number",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("opper version %s\n", version)
+	},
+}
+
 func executeCommand(cmd commands.Command) error {
 	ctx := context.Background()
 
@@ -35,6 +45,9 @@ func main() {
 	// Global flags
 	var keyName string
 	rootCmd.PersistentFlags().StringVar(&keyName, "key", "default", "API key to use from config")
+
+	var debug bool
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug output")
 
 	// Update executeCommand to use baseUrl
 	executeCommand := func(cmd commands.Command) error {
@@ -273,6 +286,15 @@ func main() {
 	var functionsCmd = &cobra.Command{
 		Use:   "functions",
 		Short: "Manage functions",
+		Example: `  # List all functions
+  opper functions list
+
+  # Create a new function
+  opper functions create myfunction "respond to questions about X"
+
+  # Chat with a function
+  opper functions chat myfunction "Hello"
+  echo "Hello" | opper functions chat myfunction`,
 	}
 
 	var listFunctionsCmd = &cobra.Command{
@@ -458,7 +480,15 @@ func main() {
 	configCmd.AddCommand(listConfigCmd, addConfigCmd, removeConfigCmd)
 
 	// Add all top-level commands
-	rootCmd.AddCommand(indexesCmd, modelsCmd, tracesCmd, functionsCmd, callCmd, configCmd)
+	rootCmd.AddCommand(indexesCmd, modelsCmd, tracesCmd, functionsCmd, callCmd, configCmd, versionCmd)
+
+	var completionCmd = &cobra.Command{
+		Use:   "completion [bash|zsh|fish|powershell]",
+		Short: "Generate completion script",
+		// ... implementation
+	}
+
+	rootCmd.AddCommand(completionCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

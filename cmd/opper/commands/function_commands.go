@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/opper-ai/oppercli/cmd/opper/commands/output"
 	"github.com/opper-ai/oppercli/opperai"
 )
 
@@ -25,27 +26,22 @@ func (c *ListCommand) Execute(ctx context.Context, client *opperai.Client) error
 		return fmt.Errorf("error listing functions: %w", err)
 	}
 
-	// Find the longest path for padding
-	maxPathLen := 0
-	for _, function := range functions {
-		if len(function.Path) > maxPathLen {
-			maxPathLen = len(function.Path)
-		}
-	}
-
-	// Print header
-	fmt.Printf("\n%-*s  %s\n", maxPathLen, "PATH", "DESCRIPTION")
-	fmt.Printf("%s  %s\n", strings.Repeat("─", maxPathLen), strings.Repeat("─", 50))
-
-	for _, function := range functions {
+	// Convert data to rows
+	rows := make([][]string, len(functions))
+	for i, function := range functions {
 		if c.Filter == "" || strings.Contains(function.Path, c.Filter) {
-			fmt.Printf("%-*s  %s\n",
-				maxPathLen,
+			rows[i] = []string{
 				function.Path,
-				function.Description)
+				function.Description,
+			}
 		}
 	}
-	fmt.Println()
+
+	// Use the formatter
+	output.Table(
+		[]string{"PATH", "DESCRIPTION"},
+		rows,
+	)
 	return nil
 }
 

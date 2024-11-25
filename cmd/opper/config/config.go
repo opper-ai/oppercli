@@ -139,3 +139,8 @@ func ValidateConfig(config *Config) error {
 	}
 	return nil
 }
+
+type CLIConfig struct {
+	DefaultModel string `yaml:"default_model"`
+	OutputFormat string `yaml:"output_format"`
+}
