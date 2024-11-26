@@ -24,58 +24,65 @@ sudo chmod 755 /usr/local/bin/opper
 
 ## Usage
 
-When first starting oppercli, it will prompt you for your API key. You can alternatively provide an envrionment variable with the key instead:
-
-```shell
-export OPPER_API_KEY=op-yourkeyhere
-```
+When first starting oppercli, it will prompt you for your API key.
 
 Typing `opper` will show you the following help:
 
 ```
 Usage:
-  opper <command> <subcommand> [arguments]
+  opper [command]
 
-Commands:
-  call [--model <model-name>] <name> <instructions> <input>   Call a function
-    Both instructions and input are required
-    Examples:
-      opper call <name> "respond in kind" "what is 2+2?"
-      opper call --model my-model <name> "respond in kind" "what is 2+2?"
-      echo "what is 2+2?" | opper call <name> "respond in kind"
+Available Commands:
+  call        Call a function
+  completion  Generate the autocompletion script for the specified shell
+  config      Manage API keys and configuration
+  functions   Manage functions
+  help        Help about any command
+  indexes     Manage indexes
+  models      Manage models
+  traces      Manage traces
+  version     Print the version number
 
-  indexes:
-    list [filter]              List indexes
-    create <name>              Create a new index
-    delete <name>              Delete an index
-    get <name>                 Get index details
-    query <name> <query>       Query an index
-    add <name> <key> <content> Add content to an index
-    upload <name> <file>       Upload and index a file
+Flags:
+      --debug        Enable debug output
+  -h, --help         help for opper
+      --key string   API key to use from config (default "default")
 
-  traces:
-    list                       List all traces
-    get <trace-id>             Get details and spans of a trace
+Use "opper [command] --help" for more information about a command.
+```
 
-      
-  models:
-    list [filter]              List custom language models
-    create <name> <litellm-id> <key> [extra] Create a new model
-    delete <name>              Delete a model
-    get <name>                 Get model details
-    test <name>                Test a model with an interactive prompt
+Each command has subcommands that can be viewed using `opper [command] --help`. For example:
 
-  functions:
-    list [filter]              List functions, optionally filtering by name
-    create <name> [instructions] Create a new function
-    delete <name>              Delete a function
-    get <name>                 Get function details
-    chat <name> [message]      Chat with a function
-      Input: echo "message" | opper functions chat <name>
-             opper functions chat <name> <message...>
+```
+opper models --help
 
-  help                         Show this help message
-  ```
+Manage models
+
+Usage:
+  opper models [command]
+
+Examples:
+  # List all models
+  opper models list
+  # Create a new model
+  opper models create mymodel litellm-id api-key
+  # Test a model
+  opper models test mymodel
+
+Available Commands:
+  create      Create a new model
+  delete      Delete a model
+  get         Get model details
+  list        List models
+  test        Test a model with an interactive prompt
+
+Flags:
+  -h, --help   help for models
+
+Global Flags:
+      --debug        Enable debug output
+      --key string   API key to use from config (default "default")
+```
 
 ## Command line arguments and stdin
 
