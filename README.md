@@ -86,12 +86,30 @@ Global Flags:
 
 ## Command line arguments and stdin
 
-The prompt can be passed on the command line, or as standard input. If you want to pass standard input, and combine it with a prompt, add a `-` on the command line before writing the prompt.
+Many commands support receiving input either through command line arguments or standard input.
+
+For example, when using the `call` command:
 
 ```shell
-opper gpt4 tell me a short joke
-echo "tell me a short joke" | opper gpt4
-echo '{"name":"Johnny", "age":41}' | opper gpt4 - only print age
+# Using command line arguments
+opper call myfunction "respond in kind" "what is 2+2?"
+
+# Using a specific model
+opper call --model anthropic/claude-3-sonnet myfunction "respond in kind" "what is 2+2?"
+
+# Using stdin
+echo "what is 2+2?" | opper call myfunction "respond in kind"
+echo '{"name":"Johnny", "age":41}' | opper call myfunction "only print age"
+```
+
+When using the `functions chat` command:
+
+```shell
+# Using command line arguments
+opper functions chat myfunction "Hello there!"
+
+# Using stdin
+echo "Hello there!" | opper functions chat myfunction
 ```
 
 ## Adding a custom model
@@ -116,11 +134,11 @@ The following are examples for common cloud model deployments:
 In this example, we are using a GPT4 deployment in Azure. It has the following configuration:
 
 ```shell
-opper models create example/my-gpt4 azure/gpt4-production my-api-key-here '{"api_base": "https://my-gpt4-deployment.openai.azure.com/", "api_version": "2024-06-01"}'
+opper models create example/my-gpt4 azure/my-gpt4-deployment my-api-key-here '{"api_base": "https://my-gpt4-endpoint.openai.azure.com/", "api_version": "2024-06-01"}'
 ```
 
-- Endpoint: https://my-gpt4-deployment.openai.azure.com/
-- Deployment name: gpt4-production, which becomes azure/gpt4-production
+- Endpoint: https://my-gpt4-endpoint.openai.azure.com/
+- Deployment name: my-gpt4-deployment, which becomes azure/my-gpt4-deployment
 - API key: my-api-key-here
 
 ## Building from source
@@ -129,3 +147,36 @@ opper models create example/my-gpt4 azure/gpt4-production my-api-key-here '{"api
 brew install golang
 make install
 ```
+
+## Shell Completion
+
+The CLI supports shell completion for bash, zsh, fish, and powershell. To enable it:
+
+### Zsh
+```shell
+# Add this to your ~/.zshrc
+source <(opper completion zsh)
+```
+
+### Bash
+```shell
+# Add this to your ~/.bashrc
+source <(opper completion bash)
+```
+
+### Fish
+```shell
+opper completion fish | source
+# To make it permanent
+opper completion fish > ~/.config/fish/completions/opper.fish
+```
+
+### PowerShell
+```powershell
+opper completion powershell | Out-String | Invoke-Expression
+# To make it permanent
+opper completion powershell > opper.ps1
+# Add the generated opper.ps1 file to your PowerShell profile
+```
+
+After enabling completion, you can use TAB to autocomplete commands, subcommands, and flags.
