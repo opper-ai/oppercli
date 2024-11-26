@@ -24,67 +24,92 @@ sudo chmod 755 /usr/local/bin/opper
 
 ## Usage
 
-When first starting oppercli, it will prompt you for your API key. You can alternatively provide an envrionment variable with the key instead:
-
-```shell
-export OPPER_API_KEY=op-yourkeyhere
-```
+When first starting oppercli, it will prompt you for your API key.
 
 Typing `opper` will show you the following help:
 
 ```
 Usage:
-  opper <command> <subcommand> [arguments]
+  opper [command]
 
-Commands:
-  call [--model <model-name>] <name> <instructions> <input>   Call a function
-    Both instructions and input are required
-    Examples:
-      opper call <name> "respond in kind" "what is 2+2?"
-      opper call --model my-model <name> "respond in kind" "what is 2+2?"
-      echo "what is 2+2?" | opper call <name> "respond in kind"
+Available Commands:
+  call        Call a function
+  completion  Generate the autocompletion script for the specified shell
+  config      Manage API keys and configuration
+  functions   Manage functions
+  help        Help about any command
+  indexes     Manage indexes
+  models      Manage models
+  traces      Manage traces
+  version     Print the version number
 
-  indexes:
-    list [filter]              List indexes
-    create <name>              Create a new index
-    delete <name>              Delete an index
-    get <name>                 Get index details
-    query <name> <query>       Query an index
-    add <name> <key> <content> Add content to an index
-    upload <name> <file>       Upload and index a file
+Flags:
+      --debug        Enable debug output
+  -h, --help         help for opper
+      --key string   API key to use from config (default "default")
 
-  traces:
-    list                       List all traces
-    get <trace-id>             Get details and spans of a trace
+Use "opper [command] --help" for more information about a command.
+```
 
-      
-  models:
-    list [filter]              List custom language models
-    create <name> <litellm-id> <key> [extra] Create a new model
-    delete <name>              Delete a model
-    get <name>                 Get model details
-    test <name>                Test a model with an interactive prompt
+Each command has subcommands that can be viewed using `opper [command] --help`. For example:
 
-  functions:
-    list [filter]              List functions, optionally filtering by name
-    create <name> [instructions] Create a new function
-    delete <name>              Delete a function
-    get <name>                 Get function details
-    chat <name> [message]      Chat with a function
-      Input: echo "message" | opper functions chat <name>
-             opper functions chat <name> <message...>
+```
+opper models --help
 
-  help                         Show this help message
-  ```
+Manage models
+
+Usage:
+  opper models [command]
+
+Examples:
+  # List all models
+  opper models list
+  # Create a new model
+  opper models create mymodel litellm-id api-key
+  # Test a model
+  opper models test mymodel
+
+Available Commands:
+  create      Create a new model
+  delete      Delete a model
+  get         Get model details
+  list        List models
+  test        Test a model with an interactive prompt
+
+Flags:
+  -h, --help   help for models
+
+Global Flags:
+      --debug        Enable debug output
+      --key string   API key to use from config (default "default")
+```
 
 ## Command line arguments and stdin
 
-The prompt can be passed on the command line, or as standard input. If you want to pass standard input, and combine it with a prompt, add a `-` on the command line before writing the prompt.
+Many commands support receiving input either through command line arguments or standard input.
+
+For example, when using the `call` command:
 
 ```shell
-opper gpt4 tell me a short joke
-echo "tell me a short joke" | opper gpt4
-echo '{"name":"Johnny", "age":41}' | opper gpt4 - only print age
+# Using command line arguments
+opper call myfunction "respond in kind" "what is 2+2?"
+
+# Using a specific model
+opper call --model anthropic/claude-3-sonnet myfunction "respond in kind" "what is 2+2?"
+
+# Using stdin
+echo "what is 2+2?" | opper call myfunction "respond in kind"
+echo '{"name":"Johnny", "age":41}' | opper call myfunction "only print age"
+```
+
+When using the `functions chat` command:
+
+```shell
+# Using command line arguments
+opper functions chat myfunction "Hello there!"
+
+# Using stdin
+echo "Hello there!" | opper functions chat myfunction
 ```
 
 ## Adding a custom model
@@ -109,11 +134,11 @@ The following are examples for common cloud model deployments:
 In this example, we are using a GPT4 deployment in Azure. It has the following configuration:
 
 ```shell
-opper models create example/my-gpt4 azure/gpt4-production my-api-key-here '{"api_base": "https://my-gpt4-deployment.openai.azure.com/", "api_version": "2024-06-01"}'
+opper models create example/my-gpt4 azure/my-gpt4-deployment my-api-key-here '{"api_base": "https://my-gpt4-endpoint.openai.azure.com/", "api_version": "2024-06-01"}'
 ```
 
-- Endpoint: https://my-gpt4-deployment.openai.azure.com/
-- Deployment name: gpt4-production, which becomes azure/gpt4-production
+- Endpoint: https://my-gpt4-endpoint.openai.azure.com/
+- Deployment name: my-gpt4-deployment, which becomes azure/my-gpt4-deployment
 - API key: my-api-key-here
 
 ## Building from source
@@ -122,3 +147,36 @@ opper models create example/my-gpt4 azure/gpt4-production my-api-key-here '{"api
 brew install golang
 make install
 ```
+
+## Shell Completion
+
+The CLI supports shell completion for bash, zsh, fish, and powershell. To enable it:
+
+### Zsh
+```shell
+# Add this to your ~/.zshrc
+source <(opper completion zsh)
+```
+
+### Bash
+```shell
+# Add this to your ~/.bashrc
+source <(opper completion bash)
+```
+
+### Fish
+```shell
+opper completion fish | source
+# To make it permanent
+opper completion fish > ~/.config/fish/completions/opper.fish
+```
+
+### PowerShell
+```powershell
+opper completion powershell | Out-String | Invoke-Expression
+# To make it permanent
+opper completion powershell > opper.ps1
+# Add the generated opper.ps1 file to your PowerShell profile
+```
+
+After enabling completion, you can use TAB to autocomplete commands, subcommands, and flags.

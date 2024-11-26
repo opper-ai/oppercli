@@ -9,11 +9,6 @@ import (
 	"github.com/opper-ai/oppercli/opperai"
 )
 
-// ListModelsCommand handles listing custom language models
-type ListModelsCommand struct {
-	Filter string
-}
-
 func (c *ListModelsCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	models, err := client.Models.List(ctx)
 	if err != nil {
@@ -53,14 +48,6 @@ func (c *ListModelsCommand) Execute(ctx context.Context, client *opperai.Client)
 	return nil
 }
 
-// CreateModelCommand handles creating custom language models
-type CreateModelCommand struct {
-	Name       string
-	Identifier string
-	APIKey     string
-	Extra      string
-}
-
 func (c *CreateModelCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	var extra map[string]interface{}
 	if err := json.Unmarshal([]byte(c.Extra), &extra); err != nil {
@@ -84,11 +71,6 @@ func (c *CreateModelCommand) Execute(ctx context.Context, client *opperai.Client
 	return nil
 }
 
-// DeleteModelCommand handles deleting custom language models
-type DeleteModelCommand struct {
-	Name string
-}
-
 func (c *DeleteModelCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	if err := client.Models.Delete(ctx, c.Name); err != nil {
 		return fmt.Errorf("error deleting model: %w", err)
@@ -96,11 +78,6 @@ func (c *DeleteModelCommand) Execute(ctx context.Context, client *opperai.Client
 
 	fmt.Printf("Successfully deleted model: %s\n", c.Name)
 	return nil
-}
-
-// GetModelCommand handles retrieving custom language model details
-type GetModelCommand struct {
-	Name string
 }
 
 func (c *GetModelCommand) Execute(ctx context.Context, client *opperai.Client) error {
@@ -127,11 +104,6 @@ func (c *GetModelCommand) Execute(ctx context.Context, client *opperai.Client) e
 	}
 
 	return nil
-}
-
-// TestModelCommand handles testing custom language models
-type TestModelCommand struct {
-	Name string
 }
 
 func (c *TestModelCommand) Execute(ctx context.Context, client *opperai.Client) error {

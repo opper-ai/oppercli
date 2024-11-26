@@ -77,7 +77,7 @@ func (c *TracesClient) WatchList(ctx context.Context, seenTraces map[string]bool
 	go func() {
 		defer close(updates)
 
-		ticker := time.NewTicker(2 * time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		for {
@@ -112,7 +112,7 @@ func (c *TracesClient) WatchTrace(ctx context.Context, traceID string) (<-chan T
 	go func() {
 		defer close(updates)
 
-		ticker := time.NewTicker(2 * time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		var lastSpanCount int
