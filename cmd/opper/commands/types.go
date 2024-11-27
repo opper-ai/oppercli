@@ -76,6 +76,8 @@ type TestModelCommand struct {
 	Name string
 }
 
+type ListBuiltinModelsCommand struct{}
+
 // Function Commands
 type ListCommand struct {
 	Filter string

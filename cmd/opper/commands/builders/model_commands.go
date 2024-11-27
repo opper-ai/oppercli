@@ -82,12 +82,23 @@ func BuildModelCommands(executeCommand func(commands.Command) error) *cobra.Comm
 		},
 	}
 
+	// Builtin command
+	builtinCmd := &cobra.Command{
+		Use:   "builtin",
+		Short: "List built-in models",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.ListBuiltinModelsCommand{})
+		},
+	}
+
 	modelsCmd.AddCommand(
 		listCmd,
 		createCmd,
 		deleteCmd,
 		getCmd,
 		testCmd,
+		builtinCmd,
 	)
 
 	return modelsCmd

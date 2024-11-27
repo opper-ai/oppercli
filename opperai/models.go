@@ -115,3 +115,28 @@ func (c *ModelsClient) Get(ctx context.Context, name string) (*CustomLanguageMod
 
 	return &model, nil
 }
+
+func (c *ModelsClient) ListBuiltin(ctx context.Context) ([]BuiltinLanguageModel, error) {
+	resp, err := c.client.DoRequest(ctx, "GET", "/v1/language-models", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, ErrUnauthorized
+	}
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, ErrRateLimit
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to list built-in models with status %s", resp.Status)
+	}
+
+	var models []BuiltinLanguageModel
+	if err := json.NewDecoder(resp.Body).Decode(&models); err != nil {
+		return nil, err
+	}
+
+	return models, nil
+}

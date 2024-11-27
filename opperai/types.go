@@ -174,3 +174,9 @@ type Dataset struct {
 	UUID       string `json:"uuid"`
 	EntryCount int    `json:"entry_count"`
 }
+
+type BuiltinLanguageModel struct {
+	Name            string `json:"name"`
+	HostingProvider string `json:"hosting_provider"`
+	Location        string `json:"location"`
+}
