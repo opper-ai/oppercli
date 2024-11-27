@@ -349,3 +349,95 @@ func TestUpdateModel(t *testing.T) {
 		})
 	}
 }
+
+func newTestClient(t *testing.T, baseURL string) *Client {
+	return NewClient("test-key", baseURL)
+}
+
+func TestListBuiltinModels(t *testing.T) {
+	tests := []struct {
+		name    string
+		handler http.HandlerFunc
+		want    []BuiltinLanguageModel
+
+		wantErr bool
+	}{
+		{
+			name: "successful list",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/v1/language-models" {
+					t.Errorf("expected path /v1/language-models, got %s", r.URL.Path)
+				}
+				if r.Method != "GET" {
+					t.Errorf("expected GET method, got %s", r.Method)
+				}
+
+				models := []BuiltinLanguageModel{
+					{
+						Name:            "anthropic/claude-3-sonnet",
+						HostingProvider: "Anthropic",
+						Location:        "US",
+					},
+					{
+						Name:            "azure/gpt4-eu",
+						HostingProvider: "Azure",
+						Location:        "EU",
+					},
+				}
+				json.NewEncoder(w).Encode(models)
+			},
+			want: []BuiltinLanguageModel{
+				{
+					Name:            "anthropic/claude-3-sonnet",
+					HostingProvider: "Anthropic",
+					Location:        "US",
+				},
+				{
+					Name:            "azure/gpt4-eu",
+					HostingProvider: "Azure",
+					Location:        "EU",
+				},
+			},
+		},
+		{
+			name: "server error",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(tt.handler)
+			defer server.Close()
+
+			client := newTestClient(t, server.URL)
+			got, err := client.Models.ListBuiltin(context.Background())
+
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if len(got) != len(tt.want) {
+				t.Errorf("expected %d models, got %d", len(tt.want), len(got))
+				return
+			}
+
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("model %d: got %+v, want %+v", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}

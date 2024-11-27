@@ -129,3 +129,48 @@ func (c *TestModelCommand) Execute(ctx context.Context, client *opperai.Client) 
 
 	return nil
 }
+
+func (c *ListBuiltinModelsCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	models, err := client.Models.ListBuiltin(ctx)
+	if err != nil {
+		return fmt.Errorf("error listing built-in models: %w", err)
+	}
+
+	// Find the longest name and provider for padding
+	maxNameLen := 4     // minimum length for "NAME"
+	maxProviderLen := 8 // minimum length for "PROVIDER"
+	for _, model := range models {
+		// Only consider models that match the filter
+		if c.Filter != "" && !strings.Contains(strings.ToLower(model.Name), strings.ToLower(c.Filter)) {
+			continue
+		}
+		if len(model.Name) > maxNameLen {
+			maxNameLen = len(model.Name)
+		}
+		if len(model.HostingProvider) > maxProviderLen {
+			maxProviderLen = len(model.HostingProvider)
+		}
+	}
+
+	// Print header
+	fmt.Printf("\n%-*s  %-*s  %s\n", maxNameLen, "NAME", maxProviderLen, "PROVIDER", "LOCATION")
+	fmt.Printf("%s  %s  %s\n",
+		strings.Repeat("─", maxNameLen),
+		strings.Repeat("─", maxProviderLen),
+		strings.Repeat("─", 8))
+
+	for _, model := range models {
+		// Only print models that match the filter
+		if c.Filter != "" && !strings.Contains(strings.ToLower(model.Name), strings.ToLower(c.Filter)) {
+			continue
+		}
+		fmt.Printf("%-*s  %-*s  %s\n",
+			maxNameLen,
+			model.Name,
+			maxProviderLen,
+			model.HostingProvider,
+			model.Location)
+	}
+	fmt.Println()
+	return nil
+}
