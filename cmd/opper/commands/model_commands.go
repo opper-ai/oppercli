@@ -140,6 +140,10 @@ func (c *ListBuiltinModelsCommand) Execute(ctx context.Context, client *opperai.
 	maxNameLen := 4     // minimum length for "NAME"
 	maxProviderLen := 8 // minimum length for "PROVIDER"
 	for _, model := range models {
+		// Only consider models that match the filter
+		if c.Filter != "" && !strings.Contains(strings.ToLower(model.Name), strings.ToLower(c.Filter)) {
+			continue
+		}
 		if len(model.Name) > maxNameLen {
 			maxNameLen = len(model.Name)
 		}
@@ -156,6 +160,10 @@ func (c *ListBuiltinModelsCommand) Execute(ctx context.Context, client *opperai.
 		strings.Repeat("─", 8))
 
 	for _, model := range models {
+		// Only print models that match the filter
+		if c.Filter != "" && !strings.Contains(strings.ToLower(model.Name), strings.ToLower(c.Filter)) {
+			continue
+		}
 		fmt.Printf("%-*s  %-*s  %s\n",
 			maxNameLen,
 			model.Name,
