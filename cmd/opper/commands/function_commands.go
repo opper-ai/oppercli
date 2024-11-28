@@ -186,12 +186,20 @@ func (c *ListEvaluationsCommand) Execute(ctx context.Context, client *opperai.Cl
 
 		for _, record := range eval.Records {
 			fmt.Println(divider)
-			score := record.Metrics["opper.score"]
-			fmt.Printf("Score: %.2f\n", score.Value)
+
+			// Print all metrics for this record
+			fmt.Printf("Metrics:\n")
+			for _, dim := range eval.Dimensions {
+				if metric, ok := record.Metrics[dim]; ok {
+					fmt.Printf("%-20s %.2f\n", dim, metric.Value)
+				}
+			}
+			fmt.Println()
+
 			fmt.Printf("Input:\n%s\n\n", record.Input)
 			fmt.Printf("Expected:\n%s\n\n", record.Expected)
 			fmt.Printf("Output:\n%s\n\n", record.Output)
-			if score.Comment != "" {
+			if score, ok := record.Metrics["opper.score"]; ok && score.Comment != "" {
 				fmt.Printf("Comment:\n%s\n", score.Comment)
 			}
 		}
