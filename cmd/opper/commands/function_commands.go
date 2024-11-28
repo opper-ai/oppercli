@@ -150,6 +150,54 @@ func (c *FunctionChatCommand) Execute(ctx context.Context, client *opperai.Clien
 	return nil
 }
 
+func (c *ListEvaluationsCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	function, err := client.Functions.GetByPath(ctx, c.FunctionPath)
+	if err != nil {
+		return fmt.Errorf("error retrieving function: %w", err)
+	}
+
+	evaluations, err := client.Functions.ListEvaluations(ctx, function.UUID)
+	if err != nil {
+		return fmt.Errorf("error listing evaluations: %w", err)
+	}
+
+	fmt.Printf("Found %d evaluations for function %s\n\n", evaluations.Meta.TotalCount, c.FunctionPath)
+
+	for _, eval := range evaluations.Data {
+		fmt.Printf("Evaluation %s (Created: %s)\n", eval.EvaluationUUID, eval.CreatedAt)
+		fmt.Printf("Status: %s\n", eval.Status.State)
+		fmt.Printf("Model: %s\n", eval.FunctionOverride.Model)
+
+		fmt.Printf("\nSummary Statistics:\n")
+		fmt.Printf("%-20s %10s %10s %10s %10s\n", "Metric", "Min", "Max", "Avg", "Median")
+		fmt.Printf("%s\n", strings.Repeat("-", 70))
+
+		for _, dim := range eval.Dimensions {
+			if stats, ok := eval.SummaryStatistics[dim]; ok {
+				fmt.Printf("%-20s %10.2f %10.2f %10.2f %10.2f\n",
+					dim, stats.Min, stats.Max, stats.Avg, stats.Median)
+			}
+		}
+
+		fmt.Printf("\nEvaluation Records:\n")
+		fmt.Printf("%-15s %-15s %-15s %-15s %s\n", "Input", "Expected", "Output", "Score", "Comment")
+		fmt.Printf("%s\n", strings.Repeat("-", 100))
+
+		for _, record := range eval.Records {
+			score := record.Metrics["opper.score"]
+			fmt.Printf("%-15s %-15s %-15s %-15.2f %s\n",
+				record.Input,
+				record.Expected,
+				record.Output,
+				score.Value,
+				score.Comment)
+		}
+		fmt.Println("\n" + strings.Repeat("-", 100) + "\n")
+	}
+
+	return nil
+}
+
 func ParseFunctionCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("function subcommand required (list, create, delete, get, chat)")

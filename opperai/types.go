@@ -180,3 +180,58 @@ type BuiltinLanguageModel struct {
 	HostingProvider string `json:"hosting_provider"`
 	Location        string `json:"location"`
 }
+
+type EvaluationMetric struct {
+	Dimension string  `json:"dimension"`
+	Value     float64 `json:"value"`
+	Comment   string  `json:"comment,omitempty"`
+}
+
+type EvaluationStatus struct {
+	State   string `json:"state"`
+	Details string `json:"details,omitempty"`
+}
+
+type EvaluationRecord struct {
+	EvaluationRecordUUID string                      `json:"evaluation_record_uuid"`
+	DatasetEntryUUID     string                      `json:"dataset_entry_uuid"`
+	Status               EvaluationStatus            `json:"status"`
+	Input                string                      `json:"input"`
+	Expected             string                      `json:"expected"`
+	Output               string                      `json:"output"`
+	Metrics              map[string]EvaluationMetric `json:"metrics"`
+}
+
+type StatisticsSummary struct {
+	Sum    float64 `json:"sum"`
+	Count  float64 `json:"count"`
+	Min    float64 `json:"min"`
+	Max    float64 `json:"max"`
+	Avg    float64 `json:"avg"`
+	Median float64 `json:"median"`
+}
+
+type FunctionOverride struct {
+	Model        string `json:"model"`
+	Instructions string `json:"instructions"`
+	FewShotCount *int   `json:"few_shot_count"`
+}
+
+type Evaluation struct {
+	EvaluationUUID    string                       `json:"evaluation_uuid"`
+	DatasetUUID       string                       `json:"dataset_uuid"`
+	Records           []EvaluationRecord           `json:"records"`
+	Status            EvaluationStatus             `json:"status"`
+	Dimensions        []string                     `json:"dimensions"`
+	SummaryStatistics map[string]StatisticsSummary `json:"summary_statistics"`
+	FunctionOverride  FunctionOverride             `json:"function_override"`
+	CreatedAt         string                       `json:"created_at"`
+	UpdatedAt         string                       `json:"updated_at"`
+}
+
+type EvaluationsResponse struct {
+	Meta struct {
+		TotalCount int `json:"total_count"`
+	} `json:"meta"`
+	Data []Evaluation `json:"data"`
+}

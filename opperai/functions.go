@@ -148,3 +148,23 @@ func (c *FunctionsClient) Chat(ctx context.Context, functionPath string, message
 
 	return "", nil
 }
+
+func (c *FunctionsClient) ListEvaluations(ctx context.Context, functionUUID string) (*EvaluationsResponse, error) {
+	endpoint := fmt.Sprintf("/api/v1/functions/%s/evaluations", functionUUID)
+	resp, err := c.client.DoRequest(ctx, "GET", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to list evaluations with status %s", resp.Status)
+	}
+
+	var evaluations EvaluationsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&evaluations); err != nil {
+		return nil, fmt.Errorf("error decoding response: %w", err)
+	}
+
+	return &evaluations, nil
+}

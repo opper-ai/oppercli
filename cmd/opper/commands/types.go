@@ -103,6 +103,10 @@ type FunctionChatCommand struct {
 	Message string
 }
 
+type ListEvaluationsCommand struct {
+	BaseCommand
+}
+
 // Call Commands
 type CallCommand struct {
 	Name         string
