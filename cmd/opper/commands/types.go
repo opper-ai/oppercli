@@ -105,6 +105,7 @@ type FunctionChatCommand struct {
 
 type ListEvaluationsCommand struct {
 	BaseCommand
+	Limit int
 }
 
 type RunEvaluationCommand struct {

@@ -156,7 +156,7 @@ func (c *ListEvaluationsCommand) Execute(ctx context.Context, client *opperai.Cl
 		return fmt.Errorf("error retrieving function: %w", err)
 	}
 
-	evaluations, err := client.Functions.ListEvaluations(ctx, function.UUID)
+	evaluations, err := client.Functions.ListEvaluations(ctx, function.UUID, c.Limit)
 	if err != nil {
 		return fmt.Errorf("error listing evaluations: %w", err)
 	}

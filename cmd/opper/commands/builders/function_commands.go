@@ -143,13 +143,17 @@ func BuildFunctionCommands(executeCommand func(commands.Command) error) *cobra.C
 		Short: "List evaluations for a function",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			limit, _ := cmd.Flags().GetInt("limit")
 			return executeCommand(&commands.ListEvaluationsCommand{
 				BaseCommand: commands.BaseCommand{
 					FunctionPath: args[0],
 				},
+				Limit: limit,
 			})
 		},
 	}
+
+	listEvaluationsCmd.Flags().Int("limit", 0, "Limit the number of evaluations returned")
 
 	// Run evaluation command
 	runEvaluationCmd := &cobra.Command{

@@ -149,8 +149,12 @@ func (c *FunctionsClient) Chat(ctx context.Context, functionPath string, message
 	return "", nil
 }
 
-func (c *FunctionsClient) ListEvaluations(ctx context.Context, functionUUID string) (*EvaluationsResponse, error) {
+func (c *FunctionsClient) ListEvaluations(ctx context.Context, functionUUID string, limit int) (*EvaluationsResponse, error) {
 	endpoint := fmt.Sprintf("/api/v1/functions/%s/evaluations", functionUUID)
+	if limit > 0 {
+		endpoint = fmt.Sprintf("%s?limit=%d", endpoint, limit)
+	}
+
 	resp, err := c.client.DoRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return nil, err
