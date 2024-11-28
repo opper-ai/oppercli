@@ -168,3 +168,27 @@ func (c *FunctionsClient) ListEvaluations(ctx context.Context, functionUUID stri
 
 	return &evaluations, nil
 }
+
+func (c *FunctionsClient) CreateEvaluation(ctx context.Context, datasetUUID string) error {
+	data := map[string]string{
+		"dataset_uuid": datasetUUID,
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("error marshaling request: %w", err)
+	}
+
+	resp, err := c.client.DoRequest(ctx, "POST", "/api/v1/evaluations", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to create evaluation with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}

@@ -107,6 +107,10 @@ type ListEvaluationsCommand struct {
 	BaseCommand
 }
 
+type RunEvaluationCommand struct {
+	BaseCommand
+}
+
 // Call Commands
 type CallCommand struct {
 	Name         string

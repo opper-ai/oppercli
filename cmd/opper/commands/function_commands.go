@@ -201,6 +201,27 @@ func (c *ListEvaluationsCommand) Execute(ctx context.Context, client *opperai.Cl
 	return nil
 }
 
+func (c *RunEvaluationCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	function, err := client.Functions.GetByPath(ctx, c.FunctionPath)
+	if err != nil {
+		return fmt.Errorf("error retrieving function: %w", err)
+	}
+
+	if function.Dataset.UUID == "" {
+		return fmt.Errorf("function has no dataset")
+	}
+
+	fmt.Printf("Running evaluation for function %s using dataset %s...\n", c.FunctionPath, function.Dataset.UUID)
+
+	err = client.Functions.CreateEvaluation(ctx, function.Dataset.UUID)
+	if err != nil {
+		return fmt.Errorf("error creating evaluation: %w", err)
+	}
+
+	fmt.Printf("Evaluation started successfully\n")
+	return nil
+}
+
 func ParseFunctionCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("function subcommand required (list, create, delete, get, chat)")

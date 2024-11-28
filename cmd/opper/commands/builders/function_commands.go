@@ -151,7 +151,24 @@ func BuildFunctionCommands(executeCommand func(commands.Command) error) *cobra.C
 		},
 	}
 
-	evaluationsCmd.AddCommand(listEvaluationsCmd)
+	// Run evaluation command
+	runEvaluationCmd := &cobra.Command{
+		Use:   "run <name>",
+		Short: "Run an evaluation for a function",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.RunEvaluationCommand{
+				BaseCommand: commands.BaseCommand{
+					FunctionPath: args[0],
+				},
+			})
+		},
+	}
+
+	evaluationsCmd.AddCommand(
+		listEvaluationsCmd,
+		runEvaluationCmd,
+	)
 
 	functionsCmd.AddCommand(
 		listCmd,
