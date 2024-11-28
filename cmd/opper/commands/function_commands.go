@@ -150,6 +150,86 @@ func (c *FunctionChatCommand) Execute(ctx context.Context, client *opperai.Clien
 	return nil
 }
 
+func (c *ListEvaluationsCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	function, err := client.Functions.GetByPath(ctx, c.FunctionPath)
+	if err != nil {
+		return fmt.Errorf("error retrieving function: %w", err)
+	}
+
+	evaluations, err := client.Functions.ListEvaluations(ctx, function.UUID, c.Limit)
+	if err != nil {
+		return fmt.Errorf("error listing evaluations: %w", err)
+	}
+
+	fmt.Printf("Found %d evaluations for function %s\n\n", evaluations.Meta.TotalCount, c.FunctionPath)
+
+	// Reverse the order of evaluations
+	for i := len(evaluations.Data) - 1; i >= 0; i-- {
+		eval := evaluations.Data[i]
+		fmt.Printf("Evaluation %s (Created: %s)\n", eval.EvaluationUUID, eval.CreatedAt)
+		fmt.Printf("Status: %s\n", eval.Status.State)
+		fmt.Printf("Model: %s\n", eval.FunctionOverride.Model)
+
+		fmt.Printf("\nSummary Statistics:\n")
+		fmt.Printf("%-20s %10s %10s %10s %10s\n", "Metric", "Min", "Max", "Avg", "Median")
+		fmt.Printf("%s\n", strings.Repeat("-", 70))
+
+		for _, dim := range eval.Dimensions {
+			if stats, ok := eval.SummaryStatistics[dim]; ok {
+				fmt.Printf("%-20s %10.2f %10.2f %10.2f %10.2f\n",
+					dim, stats.Min, stats.Max, stats.Avg, stats.Median)
+			}
+		}
+
+		fmt.Printf("\nEvaluation Records:\n")
+		divider := strings.Repeat("-", 100)
+
+		for _, record := range eval.Records {
+			fmt.Println(divider)
+
+			// Print all metrics for this record
+			fmt.Printf("Metrics:\n")
+			for _, dim := range eval.Dimensions {
+				if metric, ok := record.Metrics[dim]; ok {
+					fmt.Printf("%-20s %.2f\n", dim, metric.Value)
+				}
+			}
+			fmt.Println()
+
+			fmt.Printf("Input:\n%s\n\n", record.Input)
+			fmt.Printf("Expected:\n%s\n\n", record.Expected)
+			fmt.Printf("Output:\n%s\n\n", record.Output)
+			if score, ok := record.Metrics["opper.score"]; ok && score.Comment != "" {
+				fmt.Printf("Comment:\n%s\n", score.Comment)
+			}
+		}
+		fmt.Println(divider + "\n")
+	}
+
+	return nil
+}
+
+func (c *RunEvaluationCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	function, err := client.Functions.GetByPath(ctx, c.FunctionPath)
+	if err != nil {
+		return fmt.Errorf("error retrieving function: %w", err)
+	}
+
+	if function.Dataset.UUID == "" {
+		return fmt.Errorf("function has no dataset")
+	}
+
+	fmt.Printf("Running evaluation for function %s using dataset %s...\n", c.FunctionPath, function.Dataset.UUID)
+
+	err = client.Functions.CreateEvaluation(ctx, function.Dataset.UUID)
+	if err != nil {
+		return fmt.Errorf("error creating evaluation: %w", err)
+	}
+
+	fmt.Printf("Evaluation started successfully\n")
+	return nil
+}
+
 func ParseFunctionCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("function subcommand required (list, create, delete, get, chat)")

@@ -148,3 +148,51 @@ func (c *FunctionsClient) Chat(ctx context.Context, functionPath string, message
 
 	return "", nil
 }
+
+func (c *FunctionsClient) ListEvaluations(ctx context.Context, functionUUID string, limit int) (*EvaluationsResponse, error) {
+	endpoint := fmt.Sprintf("/api/v1/functions/%s/evaluations", functionUUID)
+	if limit > 0 {
+		endpoint = fmt.Sprintf("%s?limit=%d", endpoint, limit)
+	}
+
+	resp, err := c.client.DoRequest(ctx, "GET", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to list evaluations with status %s", resp.Status)
+	}
+
+	var evaluations EvaluationsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&evaluations); err != nil {
+		return nil, fmt.Errorf("error decoding response: %w", err)
+	}
+
+	return &evaluations, nil
+}
+
+func (c *FunctionsClient) CreateEvaluation(ctx context.Context, datasetUUID string) error {
+	data := map[string]string{
+		"dataset_uuid": datasetUUID,
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("error marshaling request: %w", err)
+	}
+
+	resp, err := c.client.DoRequest(ctx, "POST", "/api/v1/evaluations", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to create evaluation with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
