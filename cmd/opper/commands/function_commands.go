@@ -163,7 +163,9 @@ func (c *ListEvaluationsCommand) Execute(ctx context.Context, client *opperai.Cl
 
 	fmt.Printf("Found %d evaluations for function %s\n\n", evaluations.Meta.TotalCount, c.FunctionPath)
 
-	for _, eval := range evaluations.Data {
+	// Reverse the order of evaluations
+	for i := len(evaluations.Data) - 1; i >= 0; i-- {
+		eval := evaluations.Data[i]
 		fmt.Printf("Evaluation %s (Created: %s)\n", eval.EvaluationUUID, eval.CreatedAt)
 		fmt.Printf("Status: %s\n", eval.Status.State)
 		fmt.Printf("Model: %s\n", eval.FunctionOverride.Model)
