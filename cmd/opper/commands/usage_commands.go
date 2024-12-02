@@ -14,7 +14,7 @@ type ListUsageCommand struct {
 	StartDate    string
 	EndDate      string
 	ProjectName  string
-	FunctionPath string
+	FunctionName string
 	Model        string
 	Skip         int
 	Limit        int
@@ -26,7 +26,7 @@ func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) 
 		StartDate:    c.StartDate,
 		EndDate:      c.EndDate,
 		ProjectName:  c.ProjectName,
-		FunctionPath: c.FunctionPath,
+		FunctionName: c.FunctionName,
 		Model:        c.Model,
 		Skip:         c.Skip,
 		Limit:        c.Limit,
@@ -61,7 +61,7 @@ func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) 
 		for _, item := range usage.Items {
 			row := []string{
 				item.ProjectName,
-				item.FunctionPath,
+				item.FunctionName,
 				item.Model,
 				fmt.Sprintf("%d", item.TokensInput),
 				fmt.Sprintf("%d", item.TokensOutput),
@@ -88,7 +88,7 @@ func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) 
 		fmt.Printf("Usage Items (Total: %d):\n", usage.Total)
 		for _, item := range usage.Items {
 			fmt.Printf("  Project: %s\n", item.ProjectName)
-			fmt.Printf("  Function: %s\n", item.FunctionPath)
+			fmt.Printf("  Function: %s\n", item.FunctionName)
 			fmt.Printf("  Model: %s\n", item.Model)
 			fmt.Printf("  Tokens Input: %d\n", item.TokensInput)
 			fmt.Printf("  Tokens Output: %d\n", item.TokensOutput)

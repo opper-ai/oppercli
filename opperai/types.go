@@ -246,7 +246,7 @@ type UsageStats struct {
 
 type UsageItem struct {
 	ProjectName  string    `json:"project_name"`
-	FunctionPath string    `json:"function_path"`
+	FunctionName string    `json:"function_path"`
 	Model        string    `json:"model"`
 	TokensInput  int       `json:"tokens_input"`
 	TokensOutput int       `json:"tokens_output"`
@@ -267,7 +267,7 @@ type UsageParams struct {
 	StartDate    string `url:"start_date,omitempty"`
 	EndDate      string `url:"end_date,omitempty"`
 	ProjectName  string `url:"project_name,omitempty"`
-	FunctionPath string `url:"function_path,omitempty"`
+	FunctionName string `url:"function_path,omitempty"`
 	Model        string `url:"model,omitempty"`
 	Skip         int    `url:"skip,omitempty"`
 	Limit        int    `url:"limit,omitempty"`
