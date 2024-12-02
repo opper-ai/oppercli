@@ -235,3 +235,40 @@ type EvaluationsResponse struct {
 	} `json:"meta"`
 	Data []Evaluation `json:"data"`
 }
+
+type UsageStats struct {
+	TotalTokensInput  int     `json:"total_tokens_input"`
+	TotalTokensOutput int     `json:"total_tokens_output"`
+	TotalTokens       int     `json:"total_tokens"`
+	TotalCost         float64 `json:"total_cost"`
+	Count             int     `json:"count"`
+}
+
+type UsageItem struct {
+	ProjectName  string    `json:"project_name"`
+	FunctionPath string    `json:"function_path"`
+	Model        string    `json:"model"`
+	TokensInput  int       `json:"tokens_input"`
+	TokensOutput int       `json:"tokens_output"`
+	CreatedAt    time.Time `json:"created_at"`
+	Cost         float64   `json:"cost"`
+	ID           string    `json:"id"`
+	UUID         string    `json:"uuid"`
+	TotalTokens  int       `json:"total_tokens"`
+}
+
+type UsageResponse struct {
+	Total int         `json:"total"`
+	Stats UsageStats  `json:"stats"`
+	Items []UsageItem `json:"items"`
+}
+
+type UsageParams struct {
+	StartDate    string `url:"start_date,omitempty"`
+	EndDate      string `url:"end_date,omitempty"`
+	ProjectName  string `url:"project_name,omitempty"`
+	FunctionPath string `url:"function_path,omitempty"`
+	Model        string `url:"model,omitempty"`
+	Skip         int    `url:"skip,omitempty"`
+	Limit        int    `url:"limit,omitempty"`
+}
