@@ -13,7 +13,10 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
   opper usage list
 
   # List usage with filters
-  opper usage list --start-date=2024-01-01 --end-date=2024-12-31 --project-name=myproject`,
+  opper usage list --start-date=2024-01-01 --end-date=2024-12-31 --project-name=myproject
+
+  # Export usage as CSV
+  opper usage list --out csv`,
 	}
 
 	// List command
@@ -28,6 +31,7 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
 			model, _ := cmd.Flags().GetString("model")
 			skip, _ := cmd.Flags().GetInt("skip")
 			limit, _ := cmd.Flags().GetInt("limit")
+			out, _ := cmd.Flags().GetString("out")
 
 			return executeCommand(&commands.ListUsageCommand{
 				StartDate:    startDate,
@@ -37,6 +41,7 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
 				Model:        model,
 				Skip:         skip,
 				Limit:        limit,
+				Out:          out,
 			})
 		},
 	}
@@ -49,6 +54,7 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
 	listCmd.Flags().String("model", "", "Filter by model")
 	listCmd.Flags().Int("skip", 0, "Number of items to skip")
 	listCmd.Flags().Int("limit", 0, "Maximum number of items to return")
+	listCmd.Flags().String("out", "", "Output format (csv)")
 
 	usageCmd.AddCommand(listCmd)
 
