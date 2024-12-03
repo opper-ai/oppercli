@@ -1,6 +1,8 @@
 package builders
 
 import (
+	"fmt"
+
 	"github.com/opper-ai/oppercli/cmd/opper/commands"
 	"github.com/spf13/cobra"
 )
@@ -18,6 +20,15 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
   # List usage with specific fields and grouping
   opper usage list --fields=completion_tokens,total_tokens --group-by=model,project.name
 
+  # Show count over time as ASCII graph (default)
+  opper usage list --graph
+
+  # Show cost over time as ASCII graph
+  opper usage list --graph=cost
+
+  # Show count over time by model
+  opper usage list --group-by model --graph
+
   # Export usage as CSV
   opper usage list --out csv`,
 	}
@@ -33,6 +44,20 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
 			fields, _ := cmd.Flags().GetStringSlice("fields")
 			groupBy, _ := cmd.Flags().GetStringSlice("group-by")
 			out, _ := cmd.Flags().GetString("out")
+			showGraph, _ := cmd.Flags().GetBool("graph")
+			graphType, _ := cmd.Flags().GetString("graph-type")
+
+			// If --graph is used, set the graph type
+			var graph string
+			if showGraph {
+				graph = graphType
+				if graph == "" {
+					graph = "count"
+				}
+				if graph != "count" && graph != "cost" {
+					return fmt.Errorf("invalid graph type: %s (must be 'count' or 'cost')", graph)
+				}
+			}
 
 			return executeCommand(&commands.ListUsageCommand{
 				FromDate:    fromDate,
@@ -41,6 +66,7 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
 				Fields:      fields,
 				GroupBy:     groupBy,
 				Out:         out,
+				Graph:       graph,
 			})
 		},
 	}
@@ -52,6 +78,8 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
 	listCmd.Flags().StringSlice("fields", nil, "Fields from event_metadata to include and sum")
 	listCmd.Flags().StringSlice("group-by", nil, "Fields from tags to group by")
 	listCmd.Flags().String("out", "", "Output format (csv)")
+	listCmd.Flags().Bool("graph", false, "Show graph")
+	listCmd.Flags().String("graph-type", "count", "Graph type (count or cost)")
 
 	usageCmd.AddCommand(listCmd)
 

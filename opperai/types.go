@@ -306,6 +306,6 @@ type UsageParams struct {
 	FromDate    string   `url:"from_date,omitempty"`
 	ToDate      string   `url:"to_date,omitempty"`
 	Granularity string   `url:"granularity,omitempty"`
-	Fields      []string `url:"fields,comma,omitempty"`
+	Fields      []string `url:"fields,omitempty"`
 	GroupBy     []string `url:"group_by,comma,omitempty"`
 }
