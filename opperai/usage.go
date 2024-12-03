@@ -18,7 +18,7 @@ func newUsageClient(client *Client) *UsageClient {
 }
 
 func (c *UsageClient) List(ctx context.Context, params *UsageParams) (*UsageResponse, error) {
-	url := "/v1/usage"
+	url := "/api/v1/usage/events"
 	if params != nil {
 		values, err := query.Values(params)
 		if err != nil {

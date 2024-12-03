@@ -5,31 +5,36 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/opper-ai/oppercli/opperai"
 )
 
 type ListUsageCommand struct {
-	StartDate    string
-	EndDate      string
-	ProjectName  string
-	FunctionName string
-	Model        string
-	Skip         int
-	Limit        int
-	Out          string
+	FromDate    string
+	ToDate      string
+	Granularity string
+	Fields      []string
+	GroupBy     []string
+	Out         string
+}
+
+func formatCost(cost string) string {
+	if f, err := strconv.ParseFloat(cost, 64); err == nil {
+		return fmt.Sprintf("%.6f", f)
+	}
+	return cost
 }
 
 func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) error {
 	params := &opperai.UsageParams{
-		StartDate:    c.StartDate,
-		EndDate:      c.EndDate,
-		ProjectName:  c.ProjectName,
-		FunctionName: c.FunctionName,
-		Model:        c.Model,
-		Skip:         c.Skip,
-		Limit:        c.Limit,
+		FromDate:    c.FromDate,
+		ToDate:      c.ToDate,
+		Granularity: c.Granularity,
+		Fields:      c.Fields,
+		GroupBy:     c.GroupBy,
 	}
 
 	usage, err := client.Usage.List(ctx, params)
@@ -37,68 +42,73 @@ func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) 
 		return err
 	}
 
+	events := *usage
+
 	switch strings.ToLower(c.Out) {
 	case "csv":
 		w := csv.NewWriter(os.Stdout)
 		defer w.Flush()
 
-		// Write header
-		header := []string{
-			"Project",
-			"Function",
-			"Model",
-			"Tokens Input",
-			"Tokens Output",
-			"Total Tokens",
-			"Cost",
-			"Created At",
+		// Build headers based on available fields
+		headers := []string{"Time Bucket", "Cost", "Count"}
+		if len(events) > 0 {
+			// Get all dynamic field names from the first event
+			var dynamicFields []string
+			for k := range events[0].Fields {
+				dynamicFields = append(dynamicFields, k)
+			}
+			// Sort field names for consistent output
+			sort.Strings(dynamicFields)
+			headers = append(headers, dynamicFields...)
 		}
-		if err := w.Write(header); err != nil {
+
+		if err := w.Write(headers); err != nil {
 			return fmt.Errorf("error writing CSV header: %v", err)
 		}
 
 		// Write data rows
-		for _, item := range usage.Items {
+		for _, event := range events {
 			row := []string{
-				item.ProjectName,
-				item.FunctionName,
-				item.Model,
-				fmt.Sprintf("%d", item.TokensInput),
-				fmt.Sprintf("%d", item.TokensOutput),
-				fmt.Sprintf("%d", item.TotalTokens),
-				fmt.Sprintf("%.4f", item.Cost),
-				item.CreatedAt.Format("2006-01-02 15:04:05"),
+				event.TimeBucket,
+				formatCost(event.Cost),
+				fmt.Sprintf("%d", event.Count),
 			}
+
+			// Add dynamic fields in the same order as headers
+			for _, h := range headers[3:] { // Skip the first 3 standard fields
+				if v, ok := event.Fields[h]; ok {
+					row = append(row, fmt.Sprintf("%v", v))
+				} else {
+					row = append(row, "")
+				}
+			}
+
 			if err := w.Write(row); err != nil {
 				return fmt.Errorf("error writing CSV row: %v", err)
 			}
 		}
 		return nil
-	case "":
-		// Print stats
-		fmt.Printf("Stats:\n")
-		fmt.Printf("  Total Tokens Input:  %d\n", usage.Stats.TotalTokensInput)
-		fmt.Printf("  Total Tokens Output: %d\n", usage.Stats.TotalTokensOutput)
-		fmt.Printf("  Total Tokens:        %d\n", usage.Stats.TotalTokens)
-		fmt.Printf("  Total Cost:          %.4f\n", usage.Stats.TotalCost)
-		fmt.Printf("  Count:               %d\n", usage.Stats.Count)
-		fmt.Printf("\n")
 
-		// Print items
-		fmt.Printf("Usage Items (Total: %d):\n", usage.Total)
-		for _, item := range usage.Items {
-			fmt.Printf("  Project: %s\n", item.ProjectName)
-			fmt.Printf("  Function: %s\n", item.FunctionName)
-			fmt.Printf("  Model: %s\n", item.Model)
-			fmt.Printf("  Tokens Input: %d\n", item.TokensInput)
-			fmt.Printf("  Tokens Output: %d\n", item.TokensOutput)
-			fmt.Printf("  Total Tokens: %d\n", item.TotalTokens)
-			fmt.Printf("  Cost: %.4f\n", item.Cost)
-			fmt.Printf("  Created At: %s\n", item.CreatedAt.Format("2006-01-02 15:04:05"))
-			fmt.Printf("\n")
+	default:
+		fmt.Printf("Usage Events:\n\n")
+		for _, event := range events {
+			fmt.Printf("Time Bucket: %s\n", event.TimeBucket)
+			fmt.Printf("Cost: %s\n", formatCost(event.Cost))
+			fmt.Printf("Count: %d\n", event.Count)
+
+			// Sort field names for consistent output
+			var fields []string
+			for k := range event.Fields {
+				fields = append(fields, k)
+			}
+			sort.Strings(fields)
+
+			// Print dynamic fields
+			for _, k := range fields {
+				fmt.Printf("%s: %v\n", k, event.Fields[k])
+			}
+			fmt.Println()
 		}
 		return nil
-	default:
-		return fmt.Errorf("unsupported output format: %s", c.Out)
 	}
 }

@@ -12,8 +12,11 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
 		Example: `  # List usage information
   opper usage list
 
-  # List usage with filters
-  opper usage list --start-date=2024-01-01 --end-date=2024-12-31 --project-name=myproject
+  # List usage with time range and granularity
+  opper usage list --from-date=2024-01-01T00:00:00Z --to-date=2024-12-31T23:59:59Z --granularity=day
+
+  # List usage with specific fields and grouping
+  opper usage list --fields=completion_tokens,total_tokens --group-by=model,project.name
 
   # Export usage as CSV
   opper usage list --out csv`,
@@ -24,36 +27,30 @@ func BuildUsageCommands(executeCommand func(commands.Command) error) *cobra.Comm
 		Use:   "list",
 		Short: "List usage information",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			startDate, _ := cmd.Flags().GetString("start-date")
-			endDate, _ := cmd.Flags().GetString("end-date")
-			projectName, _ := cmd.Flags().GetString("project-name")
-			functionName, _ := cmd.Flags().GetString("function-name")
-			model, _ := cmd.Flags().GetString("model")
-			skip, _ := cmd.Flags().GetInt("skip")
-			limit, _ := cmd.Flags().GetInt("limit")
+			fromDate, _ := cmd.Flags().GetString("from-date")
+			toDate, _ := cmd.Flags().GetString("to-date")
+			granularity, _ := cmd.Flags().GetString("granularity")
+			fields, _ := cmd.Flags().GetStringSlice("fields")
+			groupBy, _ := cmd.Flags().GetStringSlice("group-by")
 			out, _ := cmd.Flags().GetString("out")
 
 			return executeCommand(&commands.ListUsageCommand{
-				StartDate:    startDate,
-				EndDate:      endDate,
-				ProjectName:  projectName,
-				FunctionName: functionName,
-				Model:        model,
-				Skip:         skip,
-				Limit:        limit,
-				Out:          out,
+				FromDate:    fromDate,
+				ToDate:      toDate,
+				Granularity: granularity,
+				Fields:      fields,
+				GroupBy:     groupBy,
+				Out:         out,
 			})
 		},
 	}
 
 	// Add flags
-	listCmd.Flags().String("start-date", "", "Filter by start date (YYYY-MM-DD)")
-	listCmd.Flags().String("end-date", "", "Filter by end date (YYYY-MM-DD)")
-	listCmd.Flags().String("project-name", "", "Filter by project name")
-	listCmd.Flags().String("function-name", "", "Filter by function name")
-	listCmd.Flags().String("model", "", "Filter by model")
-	listCmd.Flags().Int("skip", 0, "Number of items to skip")
-	listCmd.Flags().Int("limit", 0, "Maximum number of items to return")
+	listCmd.Flags().String("from-date", "", "Start date and time (RFC3339 format)")
+	listCmd.Flags().String("to-date", "", "End date and time (RFC3339 format)")
+	listCmd.Flags().String("granularity", "day", "Time granularity for grouping (minute, hour, day, month, year)")
+	listCmd.Flags().StringSlice("fields", nil, "Fields from event_metadata to include and sum")
+	listCmd.Flags().StringSlice("group-by", nil, "Fields from tags to group by")
 	listCmd.Flags().String("out", "", "Output format (csv)")
 
 	usageCmd.AddCommand(listCmd)

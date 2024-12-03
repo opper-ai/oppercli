@@ -1,6 +1,7 @@
 package opperai
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -257,18 +258,54 @@ type UsageItem struct {
 	TotalTokens  int       `json:"total_tokens"`
 }
 
-type UsageResponse struct {
-	Total int         `json:"total"`
-	Stats UsageStats  `json:"stats"`
-	Items []UsageItem `json:"items"`
+type UsageEvent struct {
+	TimeBucket string                 `json:"time_bucket"`
+	Cost       string                 `json:"cost"`
+	Count      int                    `json:"count"`
+	Fields     map[string]interface{} `json:"-"`
 }
 
+func (e *UsageEvent) UnmarshalJSON(data []byte) error {
+	type Alias UsageEvent
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	// Create fields map if not exists
+	if e.Fields == nil {
+		e.Fields = make(map[string]interface{})
+	}
+
+	// Unmarshal into a map to get all fields
+	var rawMap map[string]interface{}
+	if err := json.Unmarshal(data, &rawMap); err != nil {
+		return err
+	}
+
+	// Add all fields except the standard ones to the Fields map
+	for k, v := range rawMap {
+		switch k {
+		case "time_bucket", "cost", "count":
+			continue
+		default:
+			e.Fields[k] = v
+		}
+	}
+
+	return nil
+}
+
+type UsageResponse []UsageEvent
+
 type UsageParams struct {
-	StartDate    string `url:"start_date,omitempty"`
-	EndDate      string `url:"end_date,omitempty"`
-	ProjectName  string `url:"project_name,omitempty"`
-	FunctionName string `url:"function_path,omitempty"`
-	Model        string `url:"model,omitempty"`
-	Skip         int    `url:"skip,omitempty"`
-	Limit        int    `url:"limit,omitempty"`
+	FromDate    string   `url:"from_date,omitempty"`
+	ToDate      string   `url:"to_date,omitempty"`
+	Granularity string   `url:"granularity,omitempty"`
+	Fields      []string `url:"fields,comma,omitempty"`
+	GroupBy     []string `url:"group_by,comma,omitempty"`
 }
