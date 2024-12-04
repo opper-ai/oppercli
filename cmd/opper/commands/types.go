@@ -119,6 +119,7 @@ type CallCommand struct {
 	Input        string
 	Model        string
 	Stream       bool
+	Tags         map[string]string
 }
 
 // Config Commands

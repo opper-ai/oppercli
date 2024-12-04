@@ -55,7 +55,7 @@ func TestCallClient_Call(t *testing.T) {
 			client := NewClient("test-key", server.URL)
 			ctx := context.Background()
 
-			result, err := client.Call.Call(ctx, "test-name", "test-instructions", "test-input", "", false)
+			result, err := client.Call.Call(ctx, "test-name", "test-instructions", "test-input", "", false, nil)
 
 			if tt.expectError {
 				if err == nil {

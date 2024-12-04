@@ -24,7 +24,7 @@ type CallResponse struct {
 	Stream  chan string
 }
 
-func (c *CallClient) Call(ctx context.Context, name string, instructions string, input string, model string, stream bool) (*CallResponse, error) {
+func (c *CallClient) Call(ctx context.Context, name string, instructions string, input string, model string, stream bool, tags map[string]string) (*CallResponse, error) {
 	payload := map[string]interface{}{
 		"name":         name,
 		"instructions": instructions,
@@ -43,6 +43,10 @@ func (c *CallClient) Call(ctx context.Context, name string, instructions string,
 
 	if model == "" {
 		delete(payload, "model")
+	}
+
+	if tags != nil {
+		payload["tags"] = tags
 	}
 
 	data, err := json.Marshal(payload)
