@@ -21,7 +21,7 @@ func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error
 	}
 
 	// Try with non-streaming first
-	response, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, false)
+	response, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, false, c.Tags)
 	if err != nil {
 		return err // Return the error directly to preserve the error message
 	}
@@ -32,7 +32,7 @@ func (c *CallCommand) Execute(ctx context.Context, client *opperai.Client) error
 
 	// If non-streaming succeeded, use streaming for output
 	if c.Stream {
-		streamResponse, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, true)
+		streamResponse, err := client.Call.Call(ctx, c.Name, c.Instructions, c.Input, c.Model, true, c.Tags)
 		if err != nil {
 			return err
 		}
