@@ -26,6 +26,7 @@ type Client struct {
 	Functions *FunctionsClient
 	Call      *CallClient
 	Traces    *TracesClient
+	Usage     *UsageClient
 }
 
 // NewClient creates a new Client with an optional baseURL.
@@ -47,6 +48,7 @@ func NewClient(apiKey string, baseURL ...string) *Client {
 	client.Functions = newFunctionsClient(client)
 	client.Call = newCallClient(client)
 	client.Traces = newTracesClient(client)
+	client.Usage = newUsageClient(client)
 
 	return client
 }

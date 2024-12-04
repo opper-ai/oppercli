@@ -60,6 +60,7 @@ func main() {
 		builders.BuildConfigCommands(executeCommand),
 		builders.BuildVersionCommand(version),
 		builders.BuildCallCommand(executeCommand),
+		builders.BuildUsageCommands(executeCommand),
 	)
 
 	if err := rootCmd.Execute(); err != nil {

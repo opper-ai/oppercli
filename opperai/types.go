@@ -1,6 +1,7 @@
 package opperai
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -234,4 +235,77 @@ type EvaluationsResponse struct {
 		TotalCount int `json:"total_count"`
 	} `json:"meta"`
 	Data []Evaluation `json:"data"`
+}
+
+type UsageStats struct {
+	TotalTokensInput  int     `json:"total_tokens_input"`
+	TotalTokensOutput int     `json:"total_tokens_output"`
+	TotalTokens       int     `json:"total_tokens"`
+	TotalCost         float64 `json:"total_cost"`
+	Count             int     `json:"count"`
+}
+
+type UsageItem struct {
+	ProjectName  string    `json:"project_name"`
+	FunctionName string    `json:"function_path"`
+	Model        string    `json:"model"`
+	TokensInput  int       `json:"tokens_input"`
+	TokensOutput int       `json:"tokens_output"`
+	CreatedAt    time.Time `json:"created_at"`
+	Cost         float64   `json:"cost"`
+	ID           string    `json:"id"`
+	UUID         string    `json:"uuid"`
+	TotalTokens  int       `json:"total_tokens"`
+}
+
+type UsageEvent struct {
+	TimeBucket string                 `json:"time_bucket"`
+	Cost       string                 `json:"cost"`
+	Count      int                    `json:"count"`
+	Fields     map[string]interface{} `json:"-"`
+}
+
+func (e *UsageEvent) UnmarshalJSON(data []byte) error {
+	type Alias UsageEvent
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	// Create fields map if not exists
+	if e.Fields == nil {
+		e.Fields = make(map[string]interface{})
+	}
+
+	// Unmarshal into a map to get all fields
+	var rawMap map[string]interface{}
+	if err := json.Unmarshal(data, &rawMap); err != nil {
+		return err
+	}
+
+	// Add all fields except the standard ones to the Fields map
+	for k, v := range rawMap {
+		switch k {
+		case "time_bucket", "cost", "count":
+			continue
+		default:
+			e.Fields[k] = v
+		}
+	}
+
+	return nil
+}
+
+type UsageResponse []UsageEvent
+
+type UsageParams struct {
+	FromDate    string   `url:"from_date,omitempty"`
+	ToDate      string   `url:"to_date,omitempty"`
+	Granularity string   `url:"granularity,omitempty"`
+	Fields      []string `url:"fields,omitempty"`
+	GroupBy     []string `url:"group_by,comma,omitempty"`
 }
