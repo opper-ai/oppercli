@@ -248,7 +248,11 @@ func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) 
 			// Add dynamic fields in the same order as headers
 			for _, h := range headers[3:] { // Skip the first 3 standard fields
 				if v, ok := event.Fields[h]; ok {
-					row = append(row, fmt.Sprintf("%v", v))
+					if v == nil {
+						row = append(row, "")
+					} else {
+						row = append(row, fmt.Sprintf("%v", v))
+					}
 				} else {
 					row = append(row, "")
 				}
