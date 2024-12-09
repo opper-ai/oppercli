@@ -1,4 +1,10 @@
 #!/bin/zsh
+if [ $# -eq 0 ]; then
+    echo "Error: Please specify what you need help with."
+    echo "Usage: osh <your shell command request>"
+    exit 1
+fi
+
 cmd=$(opper call --model="anthropic/claude-3.5-sonnet-20241022" shell "You are a bash shell assistant. Provide the appropriate command to run based on the user's input. Be concise. Just respond with the command. Do not add markdown formatting." "$*")
 vared cmd
 eval "$cmd"
