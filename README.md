@@ -141,6 +141,45 @@ opper models create example/my-gpt4 azure/my-gpt4-deployment my-api-key-here '{"
 - Deployment name: my-gpt4-deployment, which becomes azure/my-gpt4-deployment
 - API key: my-api-key-here
 
+## Show usage based on call tag
+
+It is possible to get the usage grouped by a tag which you send as part of the call. In this example, we are passing in `customer_id` in a call:
+
+```python
+result, _ = await opper.call(
+    name="respond",
+    input="What is the capital of Sweden?",
+    tags={"customer_id": "my-customer-id"},
+)
+```
+
+Then we can query for usage per customer_id:
+
+```
+opper usage list --from-date=2025-05-15 --to-date=2025-05-16 --fields=total_tokens,cost --group-by=customer_id
+Usage Events:
+
+Time Bucket: 2025-05-15T00:00:00Z
+Cost: 0.000005
+Count: 1
+customer_id: another-customer-id
+total_tokens: 31
+
+Time Bucket: 2025-05-15T00:00:00Z
+Cost: 0.000016
+Count: 3
+customer_id: my-customer-id
+total_tokens: 92
+
+Time Bucket: 2025-05-15T00:00:00Z
+Cost: 0.000046
+Count: 1
+customer_id: <nil>
+total_tokens: 51
+```
+
+To have a more parsable list, add `--out=csv` to the list command.
+
 ## Building from source
 
 ```shell
