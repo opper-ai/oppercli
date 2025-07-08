@@ -262,6 +262,7 @@ type UsageEvent struct {
 	TimeBucket string                 `json:"time_bucket"`
 	Cost       string                 `json:"cost"`
 	Count      int                    `json:"count"`
+	EventType  *string                `json:"event_type,omitempty"`
 	Fields     map[string]interface{} `json:"-"`
 }
 
@@ -290,7 +291,7 @@ func (e *UsageEvent) UnmarshalJSON(data []byte) error {
 	// Add all fields except the standard ones to the Fields map
 	for k, v := range rawMap {
 		switch k {
-		case "time_bucket", "cost", "count":
+		case "time_bucket", "cost", "count", "event_type":
 			continue
 		default:
 			e.Fields[k] = v
@@ -302,9 +303,24 @@ func (e *UsageEvent) UnmarshalJSON(data []byte) error {
 
 type UsageResponse []UsageEvent
 
+type UsageSummary struct {
+	TotalCost            string                 `json:"total_cost"`
+	GenerationCost       string                 `json:"generation_cost"`
+	PlatformCost         string                 `json:"platform_cost"`
+	SpanCost             string                 `json:"span_cost"`
+	EmbeddingCost        string                 `json:"embedding_cost"`
+	MetricCost           string                 `json:"metric_cost"`
+	DatasetStorageCost   string                 `json:"dataset_storage_cost"`
+	ImageCost            string                 `json:"image_cost"`
+	TotalEvents          int                    `json:"total_events"`
+	DateRange            []time.Time            `json:"date_range"`
+	EventCountBreakdown  map[string]int         `json:"event_count_breakdown"`
+}
+
 type UsageParams struct {
 	FromDate    string   `url:"from_date,omitempty"`
 	ToDate      string   `url:"to_date,omitempty"`
+	EventType   string   `url:"event_type,omitempty"`
 	Granularity string   `url:"granularity,omitempty"`
 	Fields      []string `url:"fields,omitempty"`
 	GroupBy     []string `url:"group_by,comma,omitempty"`
