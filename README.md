@@ -205,9 +205,6 @@ Get a comprehensive breakdown of costs and event counts by type:
 # Summary of generation events (default)
 opper usage list --summary
 
-# Summary of all event types
-opper usage list --summary --event-type=all
-
 # Summary for specific date range
 opper usage list --summary --from-date=2024-01-01 --to-date=2024-01-30
 ```
