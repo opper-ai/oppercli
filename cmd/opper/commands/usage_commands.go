@@ -50,10 +50,21 @@ func getGraphValue(event opperai.UsageEvent, graphType string) float64 {
 }
 
 func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	// Handle event type logic:
+	// - Empty/unspecified -> default to "generation"
+	// - "all" -> empty string (gets all event types from API)
+	// - Specific type -> pass through as-is
+	eventType := c.EventType
+	if eventType == "" {
+		eventType = "generation"
+	} else if eventType == "all" {
+		eventType = ""
+	}
+
 	params := &opperai.UsageParams{
 		FromDate:    c.FromDate,
 		ToDate:      c.ToDate,
-		EventType:   c.EventType,
+		EventType:   eventType,
 		Granularity: c.Granularity,
 		Fields:      c.Fields,
 		GroupBy:     c.GroupBy,
