@@ -52,3 +52,39 @@ func (c *UsageClient) List(ctx context.Context, params *UsageParams) (*UsageResp
 
 	return &usage, nil
 }
+
+func (c *UsageClient) Summary(ctx context.Context, params *UsageParams) (*UsageSummary, error) {
+	url := "/api/v1/usage/summary"
+	if params != nil {
+		values, err := query.Values(params)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode query parameters: %w", err)
+		}
+		if len(values) > 0 {
+			url = fmt.Sprintf("%s?%s", url, values.Encode())
+		}
+	}
+
+	resp, err := c.client.DoRequest(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, ErrUnauthorized
+	}
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, ErrRateLimit
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get usage summary with status %s", resp.Status)
+	}
+
+	var summary UsageSummary
+	if err := json.NewDecoder(resp.Body).Decode(&summary); err != nil {
+		return nil, err
+	}
+
+	return &summary, nil
+}

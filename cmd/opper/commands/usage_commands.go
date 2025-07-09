@@ -17,11 +17,13 @@ import (
 type ListUsageCommand struct {
 	FromDate    string
 	ToDate      string
+	EventType   string
 	Granularity string
 	Fields      []string
 	GroupBy     []string
 	Out         string
 	Graph       string
+	Summary     bool
 }
 
 func formatCost(cost string) string {
@@ -48,12 +50,58 @@ func getGraphValue(event opperai.UsageEvent, graphType string) float64 {
 }
 
 func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) error {
+	// Handle event type logic:
+	// - Empty/unspecified -> default to "generation"
+	// - "all" -> empty string (gets all event types from API)
+	// - Specific type -> pass through as-is
+	eventType := c.EventType
+	if eventType == "" {
+		eventType = "generation"
+	} else if eventType == "all" {
+		eventType = ""
+	}
+
 	params := &opperai.UsageParams{
 		FromDate:    c.FromDate,
 		ToDate:      c.ToDate,
+		EventType:   eventType,
 		Granularity: c.Granularity,
 		Fields:      c.Fields,
 		GroupBy:     c.GroupBy,
+	}
+
+	// Handle summary request
+	if c.Summary {
+		summary, err := client.Usage.Summary(ctx, params)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Usage Summary:\n\n")
+		fmt.Printf("Total Cost: %s\n", formatCost(summary.TotalCost))
+		fmt.Printf("Total Events: %d\n\n", summary.TotalEvents)
+		
+		fmt.Printf("Cost Breakdown:\n")
+		fmt.Printf("  Generation: %s\n", formatCost(summary.GenerationCost))
+		fmt.Printf("  Platform: %s\n", formatCost(summary.PlatformCost))
+		fmt.Printf("  Span: %s\n", formatCost(summary.SpanCost))
+		fmt.Printf("  Embedding: %s\n", formatCost(summary.EmbeddingCost))
+		fmt.Printf("  Metric: %s\n", formatCost(summary.MetricCost))
+		fmt.Printf("  Dataset Storage: %s\n", formatCost(summary.DatasetStorageCost))
+		fmt.Printf("  Image: %s\n\n", formatCost(summary.ImageCost))
+
+		fmt.Printf("Event Count Breakdown:\n")
+		for eventType, count := range summary.EventCountBreakdown {
+			fmt.Printf("  %s: %d\n", eventType, count)
+		}
+
+		if len(summary.DateRange) >= 2 {
+			fmt.Printf("\nDate Range: %s to %s\n", 
+				summary.DateRange[0].Format("2006-01-02 15:04:05"),
+				summary.DateRange[1].Format("2006-01-02 15:04:05"))
+		}
+
+		return nil
 	}
 
 	usage, err := client.Usage.List(ctx, params)
@@ -221,7 +269,7 @@ func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) 
 		defer w.Flush()
 
 		// Build headers based on available fields
-		headers := []string{"Time Bucket", "Cost", "Count"}
+		headers := []string{"Time Bucket", "Cost", "Count", "Event Type"}
 		if len(events) > 0 {
 			// Get all dynamic field names from the first event
 			var dynamicFields []string
@@ -239,14 +287,19 @@ func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) 
 
 		// Write data rows
 		for _, event := range events {
+			eventType := ""
+			if event.EventType != nil {
+				eventType = *event.EventType
+			}
 			row := []string{
 				event.TimeBucket,
 				formatCost(event.Cost),
 				fmt.Sprintf("%d", event.Count),
+				eventType,
 			}
 
 			// Add dynamic fields in the same order as headers
-			for _, h := range headers[3:] { // Skip the first 3 standard fields
+			for _, h := range headers[4:] { // Skip the first 4 standard fields
 				if v, ok := event.Fields[h]; ok {
 					if v == nil {
 						row = append(row, "")
@@ -270,6 +323,9 @@ func (c *ListUsageCommand) Execute(ctx context.Context, client *opperai.Client) 
 			fmt.Printf("Time Bucket: %s\n", event.TimeBucket)
 			fmt.Printf("Cost: %s\n", formatCost(event.Cost))
 			fmt.Printf("Count: %d\n", event.Count)
+			if event.EventType != nil {
+				fmt.Printf("Event Type: %s\n", *event.EventType)
+			}
 
 			// Sort field names for consistent output
 			var fields []string

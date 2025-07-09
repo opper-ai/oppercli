@@ -180,6 +180,50 @@ total_tokens: 51
 
 To have a more parsable list, add `--out=csv` to the list command.
 
+### Event Type Filtering
+
+The usage command now defaults to showing **generation events** (AI model calls) for better user experience. You can control this behavior:
+
+```shell
+# Shows generation events (default behavior)
+opper usage list
+
+# Shows ALL event types (generation, platform, span, embedding, etc.)
+opper usage list --event-type=all
+
+# Shows specific event types
+opper usage list --event-type=platform
+opper usage list --event-type=span
+opper usage list --event-type=embedding
+```
+
+### Usage Summary
+
+Get a comprehensive breakdown of costs and event counts by type:
+
+```shell
+# Summary of generation events (default)
+opper usage list --summary
+
+# Summary for specific date range
+opper usage list --summary --from-date=2024-01-01 --to-date=2024-01-30
+```
+
+### Useful Fields for Generation Events
+
+When analyzing generation events, these fields provide the most valuable insights:
+
+```shell
+# Token usage breakdown
+opper usage list --fields=prompt_tokens,total_tokens,completion_tokens
+
+# Grouped by model with token details
+opper usage list --fields=prompt_tokens,completion_tokens --group-by=model
+
+# Cost analysis over time
+opper usage list --event-type=all --from-date=2025-07-05 --to-date=2025-07-10 --graph --graph-type=cost
+```
+
 ## Building from source
 
 ```shell
