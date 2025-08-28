@@ -48,6 +48,16 @@ func (c *ConfigCommand) Execute(ctx context.Context, client *opperai.Client) err
 		}
 		fmt.Printf("Removed API key '%s'\n", c.Name)
 
+	case "get":
+		if c.Name == "" {
+			return fmt.Errorf("name required")
+		}
+		if apiKey, exists := cfg.APIKeys[c.Name]; exists {
+			fmt.Print(apiKey.Key)
+		} else {
+			return fmt.Errorf("API key '%s' not found", c.Name)
+		}
+
 	default:
 		return fmt.Errorf("unknown config action: %s", c.Action)
 	}

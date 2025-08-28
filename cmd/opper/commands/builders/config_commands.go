@@ -16,7 +16,13 @@ func BuildConfigCommands(executeCommand func(commands.Command) error) *cobra.Com
   opper config add mykey sk-xxx
 
   # Add a new API key with custom base URL
-  opper config add mykey sk-xxx --base-url https://api.custom.com`,
+  opper config add mykey sk-xxx --base-url https://api.custom.com
+
+  # Get an API key value
+  opper config get dev
+
+  # Use API key in environment variable
+  OPPER_API_KEY=$(opper config get dev) ./myapp`,
 	}
 
 	// List command
@@ -58,10 +64,24 @@ func BuildConfigCommands(executeCommand func(commands.Command) error) *cobra.Com
 		},
 	)
 
+	// Get command
+	getCmd := &cobra.Command{
+		Use:   "get <name>",
+		Short: "Get an API key value",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return executeCommand(&commands.ConfigCommand{
+				Action: "get",
+				Name:   args[0],
+			})
+		},
+	}
+
 	configCmd.AddCommand(
 		listCmd,
 		addCmd,
 		removeCmd,
+		getCmd,
 	)
 
 	return configCmd
