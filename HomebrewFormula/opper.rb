@@ -3,6 +3,8 @@ class Opper < Formula
   homepage "https://github.com/opper-ai/oppercli"
   version "0.13.0"
 
+  disable! date: "2026-10-06", because: "has been retired; install the maintained CLI with `npm install -g @opperai/cli`"
+
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/opper-ai/oppercli/releases/download/v#{version}/opper-darwin-arm64"
@@ -22,6 +24,19 @@ class Opper < Formula
 
   def install
     bin.install Dir["opper-*"].first => "opper"
+  end
+
+  def caveats
+    <<~EOS
+      The legacy Go CLI and this tap are retired. To migrate:
+        brew uninstall opper-ai/oppercli/opper
+        brew untap opper-ai/oppercli
+        npm install -g @opperai/cli
+        opper login
+
+      Keep ~/.oppercli for one-time credential migration when no new CLI config exists.
+      Documentation: https://docs.opper.ai/developer-tools/cli
+    EOS
   end
 
   test do

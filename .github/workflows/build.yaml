@@ -1,11 +1,13 @@
-name: Go Build and Release
+name: Go Tests and Build
 
 on:
   push:
     branches:
-      - '**'
-    tags:
-      - 'v*'
+      - main
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -66,49 +68,3 @@ jobs:
           path: |
             ./bin/opper-${{ matrix.goos }}-${{ matrix.goarch }}
             ./bin/opper-${{ matrix.goos }}-${{ matrix.goarch }}.sha256
-
-  release:
-    name: Create Release
-    needs: [test, build]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download all artifacts from the matrix build
-        uses: actions/download-artifact@v4
-        with:
-          path: ./artifacts
-          merge-multiple: true
-
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create '${{ github.ref_name }}' --repo '${{ github.repository }}' --notes ""
-            
-      - name: Upload artifact signatures to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: >-
-          gh release upload '${{ github.ref_name }}' ./artifacts/** --repo '${{ github.repository }}'
-
-      - name: Update Homebrew Formula
-        run: |
-          chmod +x ./scripts/update_formula.sh
-          ./scripts/update_formula.sh ${{ github.ref_name }}
-
-      - name: Commit and Push Formula Changes
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-          git checkout main
-          git add HomebrewFormula/opper.rb
-          git commit -m "Update formula for version ${{ github.ref_name }}"
-          git push origin main
